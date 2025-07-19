@@ -14,7 +14,7 @@ class TestAparaviClient:
     def setup_method(self):
         """Set up test fixtures"""
         self.client = AparaviClient(
-            base_url="https://api.example.com",
+            base_url="https://eaas-dev.aparavi.com",
             api_key="test-api-key"
         )
         self.pipeline_config = {
@@ -24,7 +24,7 @@ class TestAparaviClient:
     
     def test_init(self):
         """Test client initialization"""
-        assert self.client.base_url == "https://api.example.com"
+        assert self.client.base_url == "https://eaas-dev.aparavi.com"
         assert self.client.api_key == "test-api-key"
         assert self.client.timeout == 30
         assert "Bearer test-api-key" in self.client.session.headers['Authorization']
@@ -33,7 +33,7 @@ class TestAparaviClient:
         """Test successful pipeline validation"""
         with requests_mock.Mocker() as m:
             m.post(
-                "https://api.example.com/pipe/validate",
+                "https://eaas-dev.aparavi.com/pipe/validate",
                 json={"status": "OK", "data": {"valid": True}}
             )
             
@@ -45,7 +45,7 @@ class TestAparaviClient:
         """Test failed pipeline validation"""
         with requests_mock.Mocker() as m:
             m.post(
-                "https://api.example.com/pipe/validate",
+                "https://eaas-dev.aparavi.com/pipe/validate",
                 json={"status": "Error", "error": {"message": "Invalid pipeline"}}
             )
             
@@ -56,7 +56,7 @@ class TestAparaviClient:
         """Test successful task start"""
         with requests_mock.Mocker() as m:
             m.put(
-                "https://api.example.com/task",
+                "https://eaas-dev.aparavi.com/task",
                 json={"status": "OK", "data": {"token": "task-123"}}
             )
             
@@ -68,7 +68,7 @@ class TestAparaviClient:
         """Test task start with thread specification"""
         with requests_mock.Mocker() as m:
             m.put(
-                "https://api.example.com/task",
+                "https://eaas-dev.aparavi.com/task",
                 json={"status": "OK", "data": {"token": "task-123"}}
             )
             
@@ -84,7 +84,7 @@ class TestAparaviClient:
         """Test successful task status retrieval"""
         with requests_mock.Mocker() as m:
             m.get(
-                "https://api.example.com/task?token=task-123",
+                "https://eaas-dev.aparavi.com/task?token=task-123",
                 json={"status": "OK", "data": {"state": "running"}}
             )
             
@@ -96,7 +96,7 @@ class TestAparaviClient:
         """Test task status for non-existent task"""
         with requests_mock.Mocker() as m:
             m.get(
-                "https://api.example.com/task?token=task-123",
+                "https://eaas-dev.aparavi.com/task?token=task-123",
                 json={"status": "Error", "error": {"message": "Task not found"}}
             )
             
@@ -107,7 +107,7 @@ class TestAparaviClient:
         """Test successful webhook post"""
         with requests_mock.Mocker() as m:
             m.put(
-                "https://api.example.com/webhook?token=task-123",
+                "https://eaas-dev.aparavi.com/webhook?token=task-123",
                 json={"result": "success"}
             )
             
@@ -118,7 +118,7 @@ class TestAparaviClient:
         """Test successful task termination"""
         with requests_mock.Mocker() as m:
             m.delete(
-                "https://api.example.com/task?token=task-123",
+                "https://eaas-dev.aparavi.com/task?token=task-123",
                 json={"status": "OK"}
             )
             
@@ -129,7 +129,7 @@ class TestAparaviClient:
         """Test authentication error handling"""
         with requests_mock.Mocker() as m:
             m.post(
-                "https://api.example.com/pipe/validate",
+                "https://eaas-dev.aparavi.com/pipe/validate",
                 status_code=401,
                 text="Unauthorized"
             )
@@ -141,7 +141,7 @@ class TestAparaviClient:
         """Test validation error handling"""
         with requests_mock.Mocker() as m:
             m.post(
-                "https://api.example.com/pipe/validate",
+                "https://eaas-dev.aparavi.com/pipe/validate",
                 status_code=422,
                 text="Validation failed"
             )
@@ -153,7 +153,7 @@ class TestAparaviClient:
         """Test generic API error handling"""
         with requests_mock.Mocker() as m:
             m.post(
-                "https://api.example.com/pipe/validate",
+                "https://eaas-dev.aparavi.com/pipe/validate",
                 status_code=500,
                 text="Internal server error"
             )
