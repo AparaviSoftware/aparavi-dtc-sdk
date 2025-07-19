@@ -31,7 +31,7 @@ Perfect for data engineers, analysts, and developers building automated data pro
 
 3. **Initialize the client:**
    ```python
-   from aparavi-dtc-sdk import AparaviClient
+   from aparavi_dtc_sdk import AparaviClient
 
    client = AparaviClient(
        base_url="https://eaas-dev.aparavi.com",
@@ -44,7 +44,7 @@ Perfect for data engineers, analysts, and developers building automated data pro
 ## Quick Start
 
 ```python
-from aparavi-dtc-sdk import AparaviClient
+from aparavi_dtc_sdk import AparaviClient
 
 # Initialize the client
 client = AparaviClient(
