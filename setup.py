@@ -18,7 +18,7 @@ setup(
     description="Python SDK for Aparavi Data Toolchain API",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/aparavi-dtc-sdk",
+    url="https://github.com/AparaviSoftware/aparavi-dtc-sdk",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 4 - Beta",
