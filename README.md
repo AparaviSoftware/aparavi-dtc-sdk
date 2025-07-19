@@ -44,6 +44,7 @@ Perfect for data engineers, analysts, and developers building automated data pro
 ## Quick Start
 
 ```python
+import json
 from aparavi_dtc_sdk import AparaviClient
 
 # Initialize the client
@@ -52,11 +53,9 @@ client = AparaviClient(
     api_key="your-api-key-here"
 )
 
-# Validate a pipeline configuration
-pipeline_config = {
-    "source": "s3://bucket/data",
-    "transformations": ["filter", "aggregate"]
-}
+# Load pipeline config from a JSON file
+with open("pipeline_config.json", "r") as f:
+    pipeline_config = json.load(f)
 
 try:
     result = client.validate_pipe(pipeline_config)
