@@ -92,6 +92,12 @@ except Exception as e:
 # Install in development mode
 pip install -e ".[dev]"
 
+# Find package Install
+pip list | grep aparavi
+
+# Show package info
+pip show aparavi_dtc_sdk
+
 # Run tests
 pytest
 
