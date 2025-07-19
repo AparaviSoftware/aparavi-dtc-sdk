@@ -96,7 +96,7 @@ pip install -e ".[dev]"
 pip list | grep aparavi
 
 # Show package info
-pip show aparavi_dtc_sdk
+pip show aparavi-dtc-sdk
 
 # Run tests
 pytest
