@@ -34,7 +34,7 @@ Perfect for data engineers, analysts, and developers building automated data pro
    from aparavi-dtc-sdk import AparaviClient
 
    client = AparaviClient(
-       base_url="https://api.aparavi.com",
+       base_url="https://eaas-dev.aparavi.com",
        api_key="your-api-key-here"
    )
    ```
@@ -48,7 +48,7 @@ from aparavi-dtc-sdk import AparaviClient
 
 # Initialize the client
 client = AparaviClient(
-    base_url="https://api.aparavi.com",
+    base_url="https://eaas-dev.aparavi.com",
     api_key="your-api-key-here"
 )
 
