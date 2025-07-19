@@ -4,8 +4,8 @@ Tests for Aparavi SDK client
 
 import pytest
 import requests_mock
-from aparavi_sdk import AparaviClient
-from aparavi_sdk.exceptions import AuthenticationError, ValidationError, TaskNotFoundError, AparaviError
+from aparavi_dtc_sdk import AparaviClient
+from aparavi_dtc_sdk.exceptions import AuthenticationError, ValidationError, TaskNotFoundError, AparaviError
 
 
 class TestAparaviClient:
