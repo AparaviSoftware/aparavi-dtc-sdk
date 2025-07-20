@@ -7,12 +7,17 @@ from setuptools import setup, find_packages
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
-with open("requirements.txt", "r", encoding="utf-8") as fh:
-    requirements = [line.strip() for line in fh if line.strip() and not line.startswith("#")]
+import os
+
+requirements = []
+req_path = os.path.join(os.path.dirname(__file__), "requirements.txt")
+if os.path.exists(req_path):
+    with open(req_path, "r", encoding="utf-8") as fh:
+        requirements = [line.strip() for line in fh if line.strip() and not line.startswith("#")]
 
 setup(
     name="aparavi-dtc-sdk",
-    version="0.1.0",
+    version="0.0.1",
     author="Aparavi",
     author_email="your.email@example.com",
     description="Python SDK for Aparavi Data Toolchain API",
@@ -43,10 +48,10 @@ setup(
             "mypy>=0.991",
         ],
     },
-    keywords="aparavi api sdk web services",
+    keywords="aparavi dtc data toolchain api sdk web services",
     project_urls={
-        "Bug Reports": "https://github.com/yourusername/aparavi-dtc-sdk/issues",
-        "Source": "https://github.com/yourusername/aparavi-dtc-sdk",
+        "Bug Reports": "https://github.com/AparaviSoftware/aparavi-dtc-sdk/issues",
+        "Source": "https://github.com/AparaviSoftware/aparavi-dtc-sdk",
     },
 )
 
