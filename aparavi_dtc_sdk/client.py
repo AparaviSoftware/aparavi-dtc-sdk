@@ -3,7 +3,7 @@ Aparavi SDK Client
 """
 
 import requests
-from typing import Optional, Dict, Any 
+from typing import Optional, Dict, Any, Literal 
 from .models import ResultBase
 from .exceptions import AparaviError, AuthenticationError, ValidationError, TaskNotFoundError, PipelineError
 
@@ -104,7 +104,7 @@ class AparaviClient:
         return result
     
     def start_task(self, pipeline: Dict[str, Any], name: Optional[str] = None, 
-                   threads: Optional[int] = None) -> ResultBase:
+                   threads: Optional[int] = None, type: Literal['gpu', 'cpu'] = 'gpu') -> ResultBase:
         """
         Execute a task with the given pipeline configuration
         
@@ -121,7 +121,7 @@ class AparaviClient:
             AuthenticationError: If authentication fails
             AparaviError: For other API errors
         """
-        params = {}
+        params = {'type': type}
         if name:
             params['name'] = name
         if threads:
@@ -148,7 +148,7 @@ class AparaviClient:
         
         return result
     
-    def get_task_status(self, token: str) -> ResultBase:
+    def get_task_status(self, token: str, type: Literal['gpu', 'cpu'] = 'gpu') -> ResultBase:
         """
         Get the status of a task
         
@@ -166,7 +166,7 @@ class AparaviClient:
         response = self._make_request(
             method='GET',
             endpoint='/task',
-            params={'token': token}
+            params={'token': token, 'type': type}
         )
         
         result = ResultBase(
@@ -183,7 +183,7 @@ class AparaviClient:
         
         return result
     
-    def post_to_webhook(self, token: str, data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def post_to_webhook(self, token: str, data: Optional[Dict[str, Any]] = None, type: Literal['gpu', 'cpu'] = 'gpu') -> Dict[str, Any]:
         """
         Send a webhook request to the task engine
         
@@ -199,7 +199,7 @@ class AparaviClient:
             AuthenticationError: If authentication fails
             AparaviError: For other API errors
         """
-        kwargs = {'params': {'token': token}}
+        kwargs = {'params': {'token': token, 'type': type}}
         if data:
             kwargs['json'] = data
         

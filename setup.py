@@ -17,7 +17,7 @@ if os.path.exists(req_path):
 
 setup(
     name="aparavi-dtc-sdk",
-    version="0.0.1",
+    version="0.0.2",
     author="Aparavi",
     author_email="your.email@example.com",
     description="Python SDK for Aparavi Data Toolchain API",
