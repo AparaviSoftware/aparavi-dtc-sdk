@@ -44,10 +44,14 @@ Perfect for data engineers, analysts, and developers building automated data pro
 
 ## Quick Start
 
+### Env file
+
 ```env
 APARAVI_API_KEY=aparavi-dtc-api-key
 APARAVI_BASE_URL=https://eaas-dev.aparavi.com
 ```
+
+### Quick start script
 
 ```python
 import json
