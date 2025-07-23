@@ -2,8 +2,11 @@
 Aparavi SDK Client
 """
 
+import glob
+import base64
+import os
 import requests
-from typing import Optional, Dict, Any, Literal 
+from typing import Optional, Dict, Any, Literal, List 
 from .models import ResultBase
 from .exceptions import AparaviError, AuthenticationError, ValidationError, TaskNotFoundError, PipelineError
 
@@ -69,7 +72,30 @@ class AparaviClient:
             
         except requests.exceptions.RequestException as e:
             raise AparaviError(f"Request failed: {str(e)}")
-    
+
+    def get_version(self) -> ResultBase:
+        """
+        Get the version of the Aparavi Web Services API
+
+        Returns:
+            ResultBase: Response containing the version information
+
+        Raises:
+            AuthenticationError: If authentication fails
+            AparaviError: For other API errors
+        """
+        response = self._make_request(
+            method='GET',
+            endpoint='/version'
+        )
+
+        return ResultBase(
+            status=response['status'],
+            data=response.get('data'),
+            error=response.get('error'),
+            metrics=response.get('metrics')
+        )
+
     def validate_pipe(self, pipeline: Dict[str, Any]) -> ResultBase:
         """
         Validate a processing pipeline configuration
@@ -103,115 +129,97 @@ class AparaviClient:
         
         return result
     
-    def start_task(self, pipeline: Dict[str, Any], name: Optional[str] = None, 
-                   threads: Optional[int] = None, type: Literal['gpu', 'cpu'] = 'gpu') -> ResultBase:
-        """
-        Execute a task with the given pipeline configuration
-        
-        Args:
-            pipeline: The pipeline configuration
-            name: Optional name for the task
-            threads: Optional number of threads to use (1-16)
-            
-        Returns:
-            ResultBase: Response containing task token on success
-            
-        Raises:
-            ValidationError: If pipeline validation fails
-            AuthenticationError: If authentication fails
-            AparaviError: For other API errors
-        """
-        params = {'type': type}
+    def start_task(
+        self,
+        pipeline: Dict[str, Any],
+        task_type: str = "gpu",
+        name: Optional[str] = None,
+        threads: Optional[int] = None,
+    ) -> ResultBase:
+        params = {'type': task_type}
         if name:
             params['name'] = name
         if threads:
             if not 1 <= threads <= 16:
                 raise ValueError("Threads must be between 1 and 16")
             params['threads'] = threads
-        
+
         response = self._make_request(
             method='PUT',
             endpoint='/task',
             json=pipeline,
             params=params
         )
-        
+
         result = ResultBase(
             status=response['status'],
             data=response.get('data'),
             error=response.get('error'),
             metrics=response.get('metrics')
         )
-        
+
         if result.status == 'Error':
             raise AparaviError(f"Task execution failed: {result.error}")
-        
+
         return result
-    
-    def get_task_status(self, token: str, type: Literal['gpu', 'cpu'] = 'gpu') -> ResultBase:
-        """
-        Get the status of a task
-        
-        Args:
-            token: The task token received from start_task
-            
-        Returns:
-            ResultBase: Response containing task status
-            
-        Raises:
-            TaskNotFoundError: If task is not found
-            AuthenticationError: If authentication fails
-            AparaviError: For other API errors
-        """
+
+
+    def get_task_status(self, token: str, task_type: str) -> ResultBase:
         response = self._make_request(
             method='GET',
             endpoint='/task',
-            params={'token': token, 'type': type}
+            params={'token': token, 'type': task_type}
         )
-        
+
         result = ResultBase(
             status=response['status'],
             data=response.get('data'),
             error=response.get('error'),
             metrics=response.get('metrics')
         )
-        
+
         if result.status == 'Error':
             if 'not found' in str(result.error).lower():
                 raise TaskNotFoundError(f"Task not found: {result.error}")
             raise AparaviError(f"Failed to get task status: {result.error}")
-        
+
         return result
-    
-    def post_to_webhook(self, token: str, data: Optional[Dict[str, Any]] = None, type: Literal['gpu', 'cpu'] = 'gpu') -> Dict[str, Any]:
-        """
-        Send a webhook request to the task engine
-        
-        Args:
-            token: The task token
-            data: Optional data to send in the webhook request
-            
-        Returns:
-            Dict: Response from the webhook endpoint
-            
-        Raises:
-            TaskNotFoundError: If task is not found
-            AuthenticationError: If authentication fails
-            AparaviError: For other API errors
-        """
-        kwargs = {'params': {'token': token, 'type': type}}
-        if data:
-            kwargs['json'] = data
-        
-        response = self._make_request(
-            method='PUT',
-            endpoint='/webhook',
-            **kwargs
-        )
-        
-        return response
-    
-    def end_task(self, token: str) -> ResultBase:
+
+
+    def send_to_webhook_with_file(
+        self,
+        token: str,
+        task_type: str,
+        file_glob: str
+    ) -> List[Dict[str, Any]]:
+        file_paths = glob.glob(file_glob)
+        if not file_paths:
+            raise ValueError(f"No files matched pattern: {file_glob}")
+
+        responses = []
+        for file_path in file_paths:
+            with open(file_path, "rb") as f:
+                encoded = base64.b64encode(f.read()).decode("utf-8")
+
+            file_data = {
+                "record": {
+                    "filename": os.path.basename(file_path),
+                    "content": encoded,
+                    "encoding": "base64"
+                }
+            }
+
+            response = self._make_request(
+                method="PUT",
+                endpoint="/webhook",
+                params={"token": token, "type": task_type},
+                json=file_data
+            )
+            responses.append(response)
+
+        return responses
+ 
+    def end_task(self, token: str, task_type: Literal["gpu", "cpu"]) -> ResultBase:
         """
         Cancel/end a task
         
@@ -229,7 +237,7 @@ class AparaviClient:
         response = self._make_request(
             method='DELETE',
             endpoint='/task',
-            params={'token': token}
+            params={'token': token, 'type': task_type}
         )
         
         result = ResultBase(

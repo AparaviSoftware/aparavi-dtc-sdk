@@ -13,6 +13,7 @@ This SDK simplifies integration with Aparavi's data processing pipelines by prov
 - **Webhook Integration**: Send real-time updates to your task engines
 - **Error Handling**: Comprehensive exception handling with meaningful error messages
 - **Type Safety**: Full type hints and structured data models for reliable development
+- **Versioning**: Track SDK versions to ensure compatibility and easy updates
 
 Perfect for data engineers, analysts, and developers building automated data processing workflows.
 
@@ -43,20 +44,35 @@ Perfect for data engineers, analysts, and developers building automated data pro
 
 ## Quick Start
 
+```env
+APARAVI_API_KEY=aparavi-dtc-api-key
+APARAVI_BASE_URL=https://eaas-dev.aparavi.com
+```
+
 ```python
 import json
+from dotenv import load_dotenv
+import os
 from aparavi_dtc_sdk import AparaviClient
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Get the API key and base URL from environment variables
+api_key = os.getenv("APARAVI_API_KEY")
+base_url = os.getenv("APARAVI_BASE_URL")
 
 # Initialize the client
 client = AparaviClient(
-    base_url="https://eaas-dev.aparavi.com",
-    api_key="your-api-key-here"
+    base_url=base_url,
+    api_key=api_key
 )
 
 # Load pipeline config from a JSON file
 with open("pipeline_config.json", "r") as f:
     pipeline_config = json.load(f)
 
+# Validate the pipeline
 try:
     result = client.validate_pipe(pipeline_config)
     print(f"Pipeline validation: {result.status}")
@@ -68,16 +84,19 @@ try:
     task_result = client.start_task(pipeline_config, name="my-task")
     if task_result.status == "OK":
         token = task_result.data["token"]
+        task_type = task_result.data["type"]
+
         print(f"Task started with token: {token}")
-        
+        print(f"Task type: {task_type}")
+
         # Get task status
-        status_result = client.get_task_status(token)
+        status_result = client.get_task_status(token=token, task_type=task_type)
         print(f"Task status: {status_result.data}")
-        
-        # End the task when done
-        end_result = client.end_task(token)
+
+        # End the task
+        end_result = client.end_task(token=token, task_type=task_type)
         print(f"Task ended: {end_result.status}")
-        
+
 except Exception as e:
     print(f"Task operation failed: {e}")
 ```
@@ -97,9 +116,6 @@ pip list | grep aparavi
 
 # Show package info
 pip show aparavi-dtc-sdk
-
-# Run tests
-pytest
 
 # Run linting
 flake8 aparavi-dtc-sdk/

@@ -2,12 +2,12 @@
 Setup configuration for aparavi-dtc-sdk
 """
 
+import os
 from setuptools import setup, find_packages
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
-import os
 
 requirements = []
 req_path = os.path.join(os.path.dirname(__file__), "requirements.txt")
@@ -17,13 +17,13 @@ if os.path.exists(req_path):
 
 setup(
     name="aparavi-dtc-sdk",
-    version="0.0.2",
+    version="0.0.3",
     author="Aparavi",
-    author_email="your.email@example.com",
+    author_email="support@aparavi.com",
     description="Python SDK for Aparavi Data Toolchain API",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/AparaviSoftware/aparavi-dtc-sdk",
+    url="https://dtc-dev.aparavi.com",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 4 - Beta",
