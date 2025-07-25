@@ -8,12 +8,13 @@ A Python SDK for interacting with the Aparavi Web Services API. This SDK provide
 
 This SDK simplifies integration with Aparavi's data processing pipelines by providing:
 
-- **Pipeline Validation**: Validate your data processing configurations before execution
-- **Task Management**: Start, monitor, and terminate processing tasks
-- **Webhook Integration**: Send real-time updates to your task engines
-- **Error Handling**: Comprehensive exception handling with meaningful error messages
-- **Type Safety**: Full type hints and structured data models for reliable development
-- **Versioning**: Track SDK versions to ensure compatibility and easy updates
+* **Pipeline Validation**: Validate your data processing configurations before execution with `validate_pipeline`.
+* **Task Management**: Start (`execute_pipeline`), monitor (`get_pipeline_status`), and terminate (`teardown_pipeline`) processing tasks.
+* **Webhook Integration**: Send real-time updates to your task engines with `send_payload_to_webhook`.
+* **Workflow Orchestration**: Automatically run an end-to-end pipeline—including validation, execution, polling, data transfer, and teardown—using `execute_pipeline_workflow`.
+* **Error Handling**: Comprehensive exception handling with meaningful error messages.
+* **Type Safety**: Full type hints and structured data models for reliable development.
+* **Versioning**: Track SDK versions to ensure compatibility and easy updates using `get_version`.
 
 Perfect for data engineers, analysts, and developers building automated data processing workflows.
 
@@ -51,7 +52,36 @@ APARAVI_API_KEY=aparavi-dtc-api-key
 APARAVI_BASE_URL=https://eaas-dev.aparavi.com
 ```
 
-### Quick start script
+### Quick start
+
+```python
+import json
+import os
+from dotenv import load_dotenv
+from aparavi_dtc_sdk import AparaviClient
+
+# Load environment variables from .env file
+load_dotenv()
+
+client = AparaviClient(
+    base_url=os.getenv("APARAVI_BASE_URL"),
+    api_key=os.getenv("APARAVI_API_KEY"),
+    timeout=1000,
+    logs="concise"
+)
+
+# Load the pipeline configuration
+with open("./pipeline_config.json") as f:
+    pipeline_config = json.load(f)
+
+# Execute the full pipeline workflow
+result = client.execute_pipeline_workflow(pipeline_config, file_glob="./*.png")
+
+# Display the result
+print(result)
+```
+
+### Power user quick start
 
 ```python
 import json
@@ -69,7 +99,8 @@ base_url = os.getenv("APARAVI_BASE_URL")
 # Initialize the client
 client = AparaviClient(
     base_url=base_url,
-    api_key=api_key
+    api_key=api_key,
+    logs="concise"
 )
 
 # Load pipeline config from a JSON file
@@ -78,28 +109,22 @@ with open("pipeline_config.json", "r") as f:
 
 # Validate the pipeline
 try:
-    result = client.validate_pipe(pipeline_config)
-    print(f"Pipeline validation: {result.status}")
+    validation_result = client.validate(pipeline_config)
 except Exception as e:
     print(f"Validation failed: {e}")
 
 # Start a task
 try:
-    task_result = client.start_task(pipeline_config, name="my-task")
-    if task_result.status == "OK":
-        token = task_result.data["token"]
-        task_type = task_result.data["type"]
-
-        print(f"Task started with token: {token}")
-        print(f"Task type: {task_type}")
+    start_result = client.start_task(pipeline_config, name="my-task")
+    if start_result.status == "OK":
+        token = start_result.data["token"]
+        task_type = start_result.data["type"]
 
         # Get task status
-        status_result = client.get_task_status(token=token, task_type=task_type)
-        print(f"Task status: {status_result.data}")
+        status_result = client.get_status(token=token, task_type=task_type)
 
         # End the task
-        end_result = client.end_task(token=token, task_type=task_type)
-        print(f"Task ended: {end_result.status}")
+        end_result = client.end(token=token, task_type=task_type)
 
 except Exception as e:
     print(f"Task operation failed: {e}")
