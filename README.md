@@ -109,22 +109,22 @@ with open("pipeline_config.json", "r") as f:
 
 # Validate the pipeline
 try:
-    validation_result = client.validate(pipeline_config)
+    validation_result = client.validate_pipeline(pipeline_config)
 except Exception as e:
     print(f"Validation failed: {e}")
 
 # Start a task
 try:
-    start_result = client.start_task(pipeline_config, name="my-task")
+    start_result = client.execute_pipeline(pipeline_config, name="my-task")
     if start_result.status == "OK":
         token = start_result.data["token"]
         task_type = start_result.data["type"]
 
         # Get task status
-        status_result = client.get_status(token=token, task_type=task_type)
+        status_result = client.get_pipeline_status(token=token, task_type=task_type)
 
         # End the task
-        end_result = client.end(token=token, task_type=task_type)
+        end_result = client.teardown_pipeline(token=token, task_type=task_type)
 
 except Exception as e:
     print(f"Task operation failed: {e}")
