@@ -1,14 +1,15 @@
+# Standrd
 import json
 import glob
 import mimetypes
 import os
 import time
 import requests
-import pprint
+# Third Party
 from typing import Optional, Dict, Any, Literal, List, Union
 from colorama import Fore, Style, init as colorama_init
 from enum import Enum
-
+# Local
 from .models import ResultBase
 from .exceptions import AparaviError, AuthenticationError, ValidationError, TaskNotFoundError, PipelineError
 
@@ -30,11 +31,16 @@ class AparaviClient:
 
     def __init__(
         self,
-        base_url: str,
-        api_key: str,
+        base_url: Union[str, None],
+        api_key: Union[str, None],
         timeout: int = 30,
         logs: Literal["none", "concise", "verbose"] = "none",
     ):
+
+        if base_url is None:
+            raise ValueError("base_url is a required value.")
+        if api_key is None:
+            raise ValueError("api_key is a required value.")
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
         self.timeout = timeout
@@ -89,12 +95,20 @@ class AparaviClient:
                 pipeline["warnings"] = []
             return pipeline
 
-        # Legacy format — wrap it
+        # Payload format — wrap it
         return {
             "pipeline": pipeline,
             "errors": [],
             "warnings": []
         }
+
+    def _parse_result(self, response: Dict[str, Any]) -> ResultBase:
+        return ResultBase(
+            status=response["status"],
+            data=response.get("data"),
+            error=response.get("error"),
+            metrics=response.get("metrics"),
+        )
 
     def _make_request(self, method: str, endpoint: str, **kwargs) -> Dict[str, Any]:
         """
@@ -115,7 +129,6 @@ class AparaviClient:
         """
         url = f"{self.base_url}{endpoint}"
 
-        # Extract params and json from kwargs for logging
         params = kwargs.get("params")
         json_data = kwargs.get("json")
 
@@ -127,6 +140,9 @@ class AparaviClient:
                 response_json = response.json()
             except Exception:
                 response_json = None
+
+            if response_json is None:
+                raise AparaviError("Response did not return valid JSON")
 
             self._log_response(response.status_code, response_json)
 
@@ -145,29 +161,16 @@ class AparaviClient:
         except requests.exceptions.RequestException as e:
             raise AparaviError(f"Request failed: {str(e)}")
 
-    # The rest of the methods remain unchanged,
-    # but they now use the updated _make_request with logging.
-
     def get_version(self) -> ResultBase:
         response = self._make_request(method="GET", endpoint="/version")
-
-        return ResultBase(
-            status=response["status"],
-            data=response.get("data"),
-            error=response.get("error"),
-            metrics=response.get("metrics"),
-        )
+        result = self._parse_result(response)
+        return result
 
     def validate_pipeline(self, pipeline: Dict[str, Any]) -> ResultBase:
         payload = self._wrap_pipeline_payload(pipeline)
         response = self._make_request(method="POST", endpoint="/pipe/validate", json=payload)
 
-        result = ResultBase(
-            status=response["status"],
-            data=response.get("data"),
-            error=response.get("error"),
-            metrics=response.get("metrics"),
-        )
+        result = self._parse_result(response)
 
         if result.status == "Error":
             raise PipelineError(f"Pipeline validation failed: {result.error}")
@@ -191,12 +194,7 @@ class AparaviClient:
         payload = self._wrap_pipeline_payload(pipeline)
         response = self._make_request(method="PUT", endpoint="/task", json=payload, params=params)
 
-        result = ResultBase(
-            status=response["status"],
-            data=response.get("data"),
-            error=response.get("error"),
-            metrics=response.get("metrics"),
-        )
+        result = self._parse_result(response)
 
         if result.status == "Error":
             raise AparaviError(f"Task execution failed: {result.error}")
@@ -206,12 +204,7 @@ class AparaviClient:
     def get_pipeline_status(self, token: str, task_type: str) -> ResultBase:
         response = self._make_request(method="GET", endpoint="/task", params={"token": token, "type": task_type})
 
-        result = ResultBase(
-            status=response["status"],
-            data=response.get("data"),
-            error=response.get("error"),
-            metrics=response.get("metrics"),
-        )
+        result = self._parse_result(response)
 
         if result.status == "Error":
             if "not found" in str(result.error).lower():
@@ -296,12 +289,7 @@ class AparaviClient:
     def teardown_pipeline(self, token: str, task_type: Literal["gpu", "cpu"]) -> ResultBase:
         response = self._make_request(method="DELETE", endpoint="/task", params={"token": token, "type": task_type})
 
-        result = ResultBase(
-            status=response["status"],
-            data=response.get("data"),
-            error=response.get("error"),
-            metrics=response.get("metrics"),
-        )
+        result = self._parse_result(response)
 
         if result.status == "Error":
             if "not found" in str(result.error).lower():
@@ -345,8 +333,12 @@ class AparaviClient:
             if task_result.status != "OK":
                 raise Exception(f"Task failed to start: {task_result.error}")
 
-            token = task_result.data["token"]
-            task_type = task_result.data["type"]
+            if task_result.data is not None:
+                token = task_result.data["token"]
+                task_type = task_result.data["type"]
+            else:
+                self._log("No response received.")
+                return
 
             is_webhook = pipeline.get("source", "").startswith("webhook") if isinstance(pipeline.get("source"), str) else False
 
@@ -357,8 +349,10 @@ class AparaviClient:
                     status_result = self.get_pipeline_status(token, task_type=task_type)
                     status_data = status_result.data
                     self._log(f"[Attempt {attempt + 1}] getTaskResponse: {status_data}", self.COLOR_ORANGE)
-                    if status_data.get("status") == "Running":
-                        break
+                    if status_data is not None:
+                        if status_data.get("status") == "Running":
+                            break
+
                     time.sleep(poll_interval)
                 else:
                     raise TimeoutError("Task never entered 'Running' state.")
@@ -372,7 +366,6 @@ class AparaviClient:
                     task_type=task_type,
                     file_glob=file_glob
                 )
-                pprint.pprint(responses)
 
                 final_status = self.get_pipeline_status(token=token, task_type=task_type)
                 self._log(f"Final Task status: {final_status.data}", self.COLOR_GREEN)
@@ -380,7 +373,7 @@ class AparaviClient:
                 end_result = self.teardown_pipeline(token=token, task_type=task_type)
                 self._log(f"Task ended: {end_result.status}", self.COLOR_GREEN)
 
-                return responses  # 🔁 webhook return
+                return responses
 
             else:
                 final_status = self.get_pipeline_status(token=token, task_type=task_type)
