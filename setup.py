@@ -25,6 +25,7 @@ setup(
     long_description_content_type="text/markdown",
     url="https://dtc-dev.aparavi.com",
     packages=find_packages(),
+    package_data={"aparavi_dtc_sdk": ["pipelines/*.json"]},
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",

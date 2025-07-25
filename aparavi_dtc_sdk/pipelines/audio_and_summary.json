@@ -1,0 +1,355 @@
+{
+	"components": [
+		{
+			"id": "webhook_1",
+			"provider": "webhook",
+			"config": {
+				"mode": "Source",
+				"type": "webhook"
+			},
+			"ui": {
+				"position": {
+					"x": -264.6759435128925,
+					"y": 219.02987471992984
+				},
+				"measured": {
+					"width": 180,
+					"height": 148
+				},
+				"data": {
+					"class": "default",
+					"type": "default"
+				},
+				"formDataValid": true
+			}
+		},
+		{
+			"id": "parse_1",
+			"provider": "parse",
+			"config": {},
+			"ui": {
+				"position": {
+					"x": -36.44494383406387,
+					"y": 122.22791274149088
+				},
+				"measured": {
+					"width": 180,
+					"height": 148
+				},
+				"data": {
+					"class": "default",
+					"type": "default"
+				},
+				"formDataValid": true,
+				"edges": [
+					{
+						"selectable": true,
+						"deletable": true,
+						"id": "xy-edge__webhook_1source-tags-0-parse_1target-tags-0",
+						"source": "webhook_1",
+						"target": "parse_1",
+						"sourceHandle": "source-tags-0",
+						"targetHandle": "target-tags-0"
+					}
+				]
+			},
+			"input": [
+				{
+					"lane": "tags",
+					"from": "webhook_1"
+				}
+			]
+		},
+		{
+			"id": "summarization_1",
+			"provider": "summarization",
+			"config": {
+				"profile": "default"
+			},
+			"ui": {
+				"position": {
+					"x": 480.77091725293405,
+					"y": 351.0590029423085
+				},
+				"measured": {
+					"width": 180,
+					"height": 89
+				},
+				"data": {
+					"class": "default",
+					"type": "default"
+				},
+				"formDataValid": false,
+				"edges": [
+					{
+						"selectable": true,
+						"deletable": true,
+						"id": "xy-edge__parse_1source-text-0-summarization_1target-text-0",
+						"source": "parse_1",
+						"target": "summarization_1",
+						"sourceHandle": "source-text-0",
+						"targetHandle": "target-text-0"
+					},
+					{
+						"selectable": true,
+						"deletable": true,
+						"id": "xy-edge__webhook_1source-text-0-summarization_1target-text-0",
+						"source": "webhook_1",
+						"target": "summarization_1",
+						"sourceHandle": "source-text-0",
+						"targetHandle": "target-text-0"
+					},
+					{
+						"selectable": true,
+						"deletable": true,
+						"id": "xy-edge__audio_transcribe_1source-text-0-summarization_1target-text-0",
+						"source": "audio_transcribe_1",
+						"target": "summarization_1",
+						"sourceHandle": "source-text-0",
+						"targetHandle": "target-text-0"
+					},
+					{
+						"selectable": true,
+						"deletable": true,
+						"id": "xy-edge__audio_transcribe_2source-text-1-summarization_1target-text-0",
+						"source": "audio_transcribe_2",
+						"target": "summarization_1",
+						"sourceHandle": "source-text-1",
+						"targetHandle": "target-text-0"
+					}
+				]
+			},
+			"input": [
+				{
+					"lane": "text",
+					"from": "parse_1"
+				},
+				{
+					"lane": "text",
+					"from": "webhook_1"
+				},
+				{
+					"lane": "text",
+					"from": "audio_transcribe_1"
+				},
+				{
+					"lane": "text",
+					"from": "audio_transcribe_2"
+				}
+			]
+		},
+		{
+			"id": "llm_gemini_1",
+			"provider": "llm_gemini",
+			"config": {
+				"profile": "gemini-1_5-pro"
+			},
+			"ui": {
+				"position": {
+					"x": 480.11481318202465,
+					"y": 474.70947528832284
+				},
+				"measured": {
+					"width": 180,
+					"height": 90
+				},
+				"data": {
+					"class": "default",
+					"type": "default"
+				},
+				"formDataValid": false
+			},
+			"control": [
+				{
+					"classType": "llm",
+					"from": "summarization_1"
+				}
+			]
+		},
+		{
+			"id": "audio_transcribe_1",
+			"provider": "audio_transcribe",
+			"config": {
+				"profile": "default"
+			},
+			"ui": {
+				"position": {
+					"x": 297.4429893530055,
+					"y": 206.45518872544142
+				},
+				"measured": {
+					"width": 180,
+					"height": 106
+				},
+				"data": {
+					"class": "default",
+					"type": "default"
+				},
+				"formDataValid": true,
+				"edges": [
+					{
+						"selectable": true,
+						"deletable": true,
+						"id": "xy-edge__webhook_1source-audio-0-audio_transcribe_1target-audio-0",
+						"source": "webhook_1",
+						"target": "audio_transcribe_1",
+						"sourceHandle": "source-audio-0",
+						"targetHandle": "target-audio-0"
+					},
+					{
+						"selectable": true,
+						"deletable": true,
+						"id": "xy-edge__parse_1source-audio-0-audio_transcribe_1target-audio-0",
+						"source": "parse_1",
+						"target": "audio_transcribe_1",
+						"sourceHandle": "source-audio-0",
+						"targetHandle": "target-audio-0"
+					}
+				]
+			},
+			"input": [
+				{
+					"lane": "audio",
+					"from": "webhook_1"
+				},
+				{
+					"lane": "audio",
+					"from": "parse_1"
+				}
+			]
+		},
+		{
+			"id": "audio_transcribe_2",
+			"provider": "audio_transcribe",
+			"config": {
+				"profile": "default"
+			},
+			"ui": {
+				"position": {
+					"x": 204.77890214400773,
+					"y": 413.0780498701286
+				},
+				"measured": {
+					"width": 180,
+					"height": 106
+				},
+				"data": {
+					"class": "default",
+					"type": "default"
+				},
+				"formDataValid": true,
+				"edges": [
+					{
+						"selectable": true,
+						"deletable": true,
+						"id": "xy-edge__webhook_1source-video-0-audio_transcribe_2target-video-1",
+						"source": "webhook_1",
+						"target": "audio_transcribe_2",
+						"sourceHandle": "source-video-0",
+						"targetHandle": "target-video-1"
+					},
+					{
+						"selectable": true,
+						"deletable": true,
+						"id": "xy-edge__parse_1source-video-0-audio_transcribe_2target-video-1",
+						"source": "parse_1",
+						"target": "audio_transcribe_2",
+						"sourceHandle": "source-video-0",
+						"targetHandle": "target-video-1"
+					}
+				]
+			},
+			"input": [
+				{
+					"lane": "video",
+					"from": "webhook_1"
+				},
+				{
+					"lane": "video",
+					"from": "parse_1"
+				}
+			]
+		},
+		{
+			"id": "response_1",
+			"provider": "response",
+			"config": {
+				"lanes": []
+			},
+			"ui": {
+				"position": {
+					"x": 707.6778333900909,
+					"y": 209.4303652603699
+				},
+				"measured": {
+					"width": 180,
+					"height": 326
+				},
+				"data": {
+					"class": "default",
+					"type": "default"
+				},
+				"formDataValid": true,
+				"edges": [
+					{
+						"selectable": true,
+						"deletable": true,
+						"id": "xy-edge__summarization_1source-text-0-response_1target-text-6",
+						"source": "summarization_1",
+						"target": "response_1",
+						"sourceHandle": "source-text-0",
+						"targetHandle": "target-text-6"
+					}
+				]
+			},
+			"input": [
+				{
+					"lane": "text",
+					"from": "summarization_1"
+				}
+			]
+		},
+		{
+			"id": "annotation_1",
+			"provider": "default",
+			"config": {},
+			"ui": {
+				"position": {
+					"x": -263.3075509633612,
+					"y": 139.81869635351316
+				},
+				"measured": {
+					"width": 180,
+					"height": 90
+				},
+				"data": {
+					"class": "annotation",
+					"type": "annotation",
+					"content": "Send video, audio, video over to this webhook"
+				},
+				"formDataValid": true
+			}
+		},
+		{
+			"id": "annotation_2",
+			"provider": "default",
+			"config": {},
+			"ui": {
+				"position": {
+					"x": -34.152112392514724,
+					"y": 47.54033664412402
+				},
+				"measured": {
+					"width": 180,
+					"height": 90
+				},
+				"data": {
+					"class": "annotation",
+					"type": "annotation",
+					"content": "Pull out audio, text, video"
+				},
+				"formDataValid": true
+			}
+		}
+	]
+}

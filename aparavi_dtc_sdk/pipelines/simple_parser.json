@@ -1,0 +1,130 @@
+{
+	"components": [
+		{
+			"id": "webhook_1",
+			"provider": "webhook",
+			"config": {
+				"hideForm": true,
+				"mode": "Source",
+				"type": "webhook"
+			},
+			"ui": {
+				"position": {
+					"x": -80,
+					"y": 240
+				},
+				"measured": {
+					"width": 140,
+					"height": 116
+				},
+				"data": {
+					"class": "source",
+					"type": "default"
+				},
+				"formDataValid": true
+			}
+		},
+		{
+			"id": "parse_1",
+			"provider": "parse",
+			"config": {},
+			"ui": {
+				"position": {
+					"x": 100,
+					"y": 300
+				},
+				"measured": {
+					"width": 140,
+					"height": 116
+				},
+				"data": {
+					"class": "data",
+					"type": "default"
+				},
+				"formDataValid": true,
+				"edges": [
+					{
+						"selectable": true,
+						"deletable": true,
+						"id": "xy-edge__webhook_1source-tags-0-parse_1target-tags-0",
+						"source": "webhook_1",
+						"target": "parse_1",
+						"sourceHandle": "source-tags-0",
+						"targetHandle": "target-tags-0"
+					}
+				]
+			},
+			"input": [
+				{
+					"lane": "tags",
+					"from": "webhook_1"
+				}
+			]
+		},
+		{
+			"id": "response_1",
+			"provider": "response",
+			"config": {
+				"lanes": []
+			},
+			"ui": {
+				"position": {
+					"x": 300,
+					"y": 220
+				},
+				"measured": {
+					"width": 140,
+					"height": 255
+				},
+				"data": {
+					"class": "infrastructure",
+					"type": "default"
+				},
+				"formDataValid": true,
+				"edges": [
+					{
+						"selectable": true,
+						"deletable": true,
+						"id": "xy-edge__parse_1source-table-0-response_1target-table-5",
+						"source": "parse_1",
+						"target": "response_1",
+						"sourceHandle": "source-table-0",
+						"targetHandle": "target-table-5"
+					},
+					{
+						"selectable": true,
+						"deletable": true,
+						"id": "xy-edge__parse_1source-text-0-response_1target-text-6",
+						"source": "parse_1",
+						"target": "response_1",
+						"sourceHandle": "source-text-0",
+						"targetHandle": "target-text-6"
+					},
+					{
+						"selectable": true,
+						"deletable": true,
+						"id": "xy-edge__parse_1source-image-0-response_1target-image-3",
+						"source": "parse_1",
+						"target": "response_1",
+						"sourceHandle": "source-image-0",
+						"targetHandle": "target-image-3"
+					}
+				]
+			},
+			"input": [
+				{
+					"lane": "table",
+					"from": "parse_1"
+				},
+				{
+					"lane": "text",
+					"from": "parse_1"
+				},
+				{
+					"lane": "image",
+					"from": "parse_1"
+				}
+			]
+		}
+	]
+}

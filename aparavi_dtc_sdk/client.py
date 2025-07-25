@@ -1,18 +1,24 @@
 import json
 import glob
-import base64
+import mimetypes
 import os
 import time
 import requests
 import pprint
 from typing import Optional, Dict, Any, Literal, List, Union
 from colorama import Fore, Style, init as colorama_init
+from enum import Enum
 
 from .models import ResultBase
 from .exceptions import AparaviError, AuthenticationError, ValidationError, TaskNotFoundError, PipelineError
 
 # Initialize colorama for cross-platform compatibility
 colorama_init(autoreset=True)
+
+class PredefinedPipeline(str, Enum):
+    SIMPLE_PARSER = "simple_parser"
+    SIMPLE_AUDIO_TRANSCRIBE = "simple_audio_transcribe"
+    AUDIO_AND_SUMMARY = "audio_and_summary"
 
 
 class AparaviClient:
@@ -219,25 +225,73 @@ class AparaviClient:
         if not file_paths:
             raise ValueError(f"No files matched pattern: {file_glob}")
 
+        webhook_url = f"{self.base_url}/webhook"
+        headers = {"Authorization": f"Bearer {self.api_key}"}
+
         responses = []
-        for file_path in file_paths:
-            with open(file_path, "rb") as f:
-                encoded = base64.b64encode(f.read()).decode("utf-8")
 
-            file_data = {
-                "record": {
-                    "filename": os.path.basename(file_path),
-                    "content": encoded,
-                    "encoding": "base64",
-                }
-            }
+        try:
+            if len(file_paths) > 1:
+                files_to_upload = []
+                for file_path in file_paths:
+                    with open(file_path, "rb") as f:
+                        file_buffer = f.read()
+                    filename = os.path.basename(file_path)
+                    content_type = mimetypes.guess_type(file_path)[0] or "application/octet-stream"
+                    files_to_upload.append(
+                        ("files", (filename, file_buffer, content_type))
+                    )
 
-            response = self._make_request(
-                method="PUT", endpoint="/webhook", params={"token": token, "type": task_type}, json=file_data
-            )
-            responses.append(response)
+                if self.logs != "none":
+                    self._log(f"Uploading {len(files_to_upload)} files to webhook (multipart)", self.COLOR_ORANGE)
 
-        return responses
+                response = requests.put(
+                    webhook_url,
+                    params={"token": token, "type": task_type},
+                    headers=headers,
+                    files=files_to_upload,
+                    timeout=self.timeout,
+                )
+
+            else:
+                file_path = file_paths[0]
+                with open(file_path, "rb") as f:
+                    file_buffer = f.read()
+                filename = os.path.basename(file_path)
+                content_type = mimetypes.guess_type(file_path)[0] or "application/octet-stream"
+
+                if self.logs != "none":
+                    self._log(f"Uploading single file to webhook: {filename}", self.COLOR_ORANGE)
+
+                headers.update({
+                    "Content-Type": content_type,
+                    "Content-Disposition": f'attachment; filename="{filename}"',
+                })
+
+                response = requests.put(
+                    webhook_url,
+                    params={"token": token, "type": task_type},
+                    headers=headers,
+                    data=file_buffer,
+                    timeout=self.timeout,
+                )
+
+            response.raise_for_status()
+
+            response_json = response.json()
+            responses.append(response_json)
+
+            if self.logs == "verbose":
+                self._log(f"Webhook response:\n{json.dumps(response_json, indent=2)}", self.COLOR_GREEN)
+
+            return responses
+
+        except requests.exceptions.RequestException as e:
+            if e.response:
+                raise AparaviError(
+                    f"Webhook failed: Server responded with status {e.response.status_code} - {e.response.text}"
+                )
+            raise AparaviError(f"Error sending to webhook: {e}")
 
     def teardown_pipeline(self, token: str, task_type: Literal["gpu", "cpu"]) -> ResultBase:
         response = self._make_request(method="DELETE", endpoint="/task", params={"token": token, "type": task_type})
@@ -340,4 +394,45 @@ class AparaviClient:
         except Exception as e:
             self._log(f"Task operation failed: {e}", self.COLOR_RED)
             return None
+
+    def run_predefined_pipeline(
+        self,
+        name: PredefinedPipeline,
+        file_glob: Optional[str] = None,
+        task_name: Optional[str] = None,
+        poll_interval: int = 15,
+        max_attempts: int = 20
+    ) -> Union[List[Dict[str, Any]], Dict[str, Any], None]:
+        """
+        Run a predefined pipeline stored in the 'packages' folder.
+
+        Args:
+            name: Enum value of the predefined pipeline.
+            file_glob: Optional glob pattern (required for webhook pipelines).
+            task_name: Optional name for the task.
+            poll_interval: Seconds between polling attempts.
+            max_attempts: Max polling attempts for status.
+
+        Returns:
+            Result of the pipeline execution workflow.
+        """
+        pipeline_path = os.path.join(os.path.dirname(__file__), "pipelines", f"{name.value}.json")
+        if not os.path.exists(pipeline_path):
+            self._log(f"Pipeline definition not found: {pipeline_path}", self.COLOR_RED)
+            return None
+
+        try:
+            with open(pipeline_path, "r") as f:
+                pipeline = json.load(f)
+        except Exception as e:
+            self._log(f"Failed to read pipeline file: {e}", self.COLOR_RED)
+            return None
+
+        return self.execute_pipeline_workflow(
+            pipeline=pipeline,
+            file_glob=file_glob,
+            task_name=task_name or name.value,
+            poll_interval=poll_interval,
+            max_attempts=max_attempts,
+        )
 

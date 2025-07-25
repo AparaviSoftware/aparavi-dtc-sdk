@@ -1,0 +1,197 @@
+{
+	"components": [
+		{
+			"id": "parse_1",
+			"provider": "parse",
+			"config": {},
+			"ui": {
+				"position": {
+					"x": 393.47873840535607,
+					"y": 382.04120082833373
+				},
+				"measured": {
+					"width": 140,
+					"height": 116
+				},
+				"data": {
+					"class": "default",
+					"type": "default"
+				},
+				"formDataValid": true,
+				"edges": [
+					{
+						"selectable": true,
+						"deletable": true,
+						"id": "xy-edge__webhook_1source-tags-0-parse_1target-tags-0",
+						"source": "webhook_1",
+						"target": "parse_1",
+						"sourceHandle": "source-tags-0",
+						"targetHandle": "target-tags-0"
+					}
+				]
+			},
+			"input": [
+				{
+					"lane": "tags",
+					"from": "webhook_1"
+				}
+			]
+		},
+		{
+			"id": "audio_transcribe_1",
+			"provider": "audio_transcribe",
+			"config": {
+				"profile": "default"
+			},
+			"ui": {
+				"position": {
+					"x": 572.5405645467953,
+					"y": 278.13911202334816
+				},
+				"measured": {
+					"width": 140,
+					"height": 83
+				},
+				"data": {
+					"class": "default",
+					"type": "default"
+				},
+				"formDataValid": true,
+				"edges": [
+					{
+						"selectable": true,
+						"deletable": true,
+						"id": "xy-edge__parse_1source-audio-0-audio_transcribe_1target-audio-0",
+						"source": "parse_1",
+						"target": "audio_transcribe_1",
+						"sourceHandle": "source-audio-0",
+						"targetHandle": "target-audio-0"
+					},
+					{
+						"selectable": true,
+						"deletable": true,
+						"id": "xy-edge__webhook_1source-audio-0-audio_transcribe_1target-audio-0",
+						"source": "webhook_1",
+						"target": "audio_transcribe_1",
+						"sourceHandle": "source-audio-0",
+						"targetHandle": "target-audio-0"
+					}
+				]
+			},
+			"input": [
+				{
+					"lane": "audio",
+					"from": "parse_1"
+				},
+				{
+					"lane": "audio",
+					"from": "webhook_1"
+				}
+			]
+		},
+		{
+			"id": "response_1",
+			"provider": "response",
+			"config": {
+				"lanes": []
+			},
+			"ui": {
+				"position": {
+					"x": 799.9086115614743,
+					"y": 225.9008789064451
+				},
+				"measured": {
+					"width": 140,
+					"height": 256
+				},
+				"data": {
+					"class": "default",
+					"type": "default"
+				},
+				"formDataValid": true,
+				"edges": [
+					{
+						"selectable": true,
+						"deletable": true,
+						"id": "xy-edge__audio_transcribe_1source-text-0-response_1target-text-6",
+						"source": "audio_transcribe_1",
+						"target": "response_1",
+						"sourceHandle": "source-text-0",
+						"targetHandle": "target-text-6"
+					}
+				]
+			},
+			"input": [
+				{
+					"lane": "text",
+					"from": "audio_transcribe_1"
+				}
+			]
+		},
+		{
+			"id": "webhook_1",
+			"provider": "webhook",
+			"config": {
+				"mode": "Source",
+				"type": "webhook"
+			},
+			"ui": {
+				"position": {
+					"x": 204.82439129872384,
+					"y": 269.28347813012823
+				},
+				"measured": {
+					"width": 140,
+					"height": 116
+				},
+				"data": {
+					"class": "default",
+					"type": "default"
+				},
+				"formDataValid": true
+			}
+		},
+		{
+			"id": "annotation_1",
+			"provider": "default",
+			"config": {},
+			"ui": {
+				"position": {
+					"x": 574.6934975680385,
+					"y": 189.29806652879853
+				},
+				"measured": {
+					"width": 140,
+					"height": 70
+				},
+				"data": {
+					"class": "annotation",
+					"type": "annotation",
+					"content": "If is an MP4 it directly pulls the audio and transcribes it"
+				},
+				"formDataValid": true
+			}
+		},
+		{
+			"id": "annotation_2",
+			"provider": "default",
+			"config": {},
+			"ui": {
+				"position": {
+					"x": 396.55992961369776,
+					"y": 511.4323377312728
+				},
+				"measured": {
+					"width": 140,
+					"height": 70
+				},
+				"data": {
+					"class": "annotation",
+					"type": "annotation",
+					"content": "If you upload a docx, zip, or any compound file type that has embedded an audio this will pull the audio out"
+				},
+				"formDataValid": true
+			}
+		}
+	]
+}
