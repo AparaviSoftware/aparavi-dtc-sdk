@@ -79,9 +79,9 @@ print(result)
 ### Pre Build Pipelines
 
 Available pre-built pipeline configurations:
-- **AUDIO_AND_SUMMARY**: Processes audio content and produces both a transcription and a concise summary. 
-- **SIMPLE_AUDIO_TRANSCRIBE**: Processes audio files and returns transcriptions of spoken content. 
-- **SIMPLE_PARSER**: Extracts and processes metadata and content from uploaded documents. 
+- `AUDIO_AND_SUMMARY`: Processes audio content and produces both a transcription and a concise summary. 
+- `SIMPLE_AUDIO_TRANSCRIBE`: Processes audio files and returns transcriptions of spoken content. 
+- `SIMPLE_PARSER`: Extracts and processes metadata and content from uploaded documents. 
 
 ```python
 import os
