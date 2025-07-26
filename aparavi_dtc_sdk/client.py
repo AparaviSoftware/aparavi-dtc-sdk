@@ -17,9 +17,9 @@ from .exceptions import AparaviError, AuthenticationError, ValidationError, Task
 colorama_init(autoreset=True)
 
 class PredefinedPipeline(str, Enum):
-    SIMPLE_PARSER = "simple_parser"
-    SIMPLE_AUDIO_TRANSCRIBE = "simple_audio_transcribe"
     AUDIO_AND_SUMMARY = "audio_and_summary"
+    SIMPLE_AUDIO_TRANSCRIBE = "simple_audio_transcribe"
+    SIMPLE_PARSER = "simple_parser"
 
 
 class AparaviClient:
@@ -36,7 +36,6 @@ class AparaviClient:
         timeout: int = 30,
         logs: Literal["none", "concise", "verbose"] = "none",
     ):
-
         if base_url is None:
             raise ValueError("base_url is a required value.")
         if api_key is None:

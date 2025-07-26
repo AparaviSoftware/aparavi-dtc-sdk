@@ -22,28 +22,26 @@ Perfect for data engineers, analysts, and developers building automated data pro
 
 ## Setup
 
-1. **Install the package:**
+1. **Get your credentials:**
+- Obtain your API key from the [Aparavi console](https://core-dev.aparavi.com/usage/)
+- Note your API base URL (e.g. `https://eaas-dev.aparavi.com`)
+
+2. **Install package:**
    ```bash
    pip install aparavi-dtc-sdk
    ```
 
-2. **Get your API credentials:**
-   - Obtain your API key from the Aparavi app
-   - Note your API base URL (e.g., `https://eaas-dev.aparavi.com`)
-
-3. **Initialize the client:**
-   ```python
-   from aparavi_dtc_sdk import AparaviClient
-
-   client = AparaviClient(
-       base_url="https://eaas-dev.aparavi.com",
-       api_key="your-api-key-here"
-   )
+3. **Create .env file:**
+   
+   **Linux/macOS:**
+   ```bash
+   touch .env
    ```
-
----
-
-## Quick Start
+   
+   **Windows:**
+   ```cmd
+   type nul > .env
+   ```
 
 ### Env file
 
@@ -52,7 +50,9 @@ APARAVI_API_KEY=aparavi-dtc-api-key
 APARAVI_BASE_URL=https://eaas-dev.aparavi.com
 ```
 
-### Quick start
+---
+
+## Quick Start
 
 ```python
 import json
@@ -60,24 +60,45 @@ import os
 from dotenv import load_dotenv
 from aparavi_dtc_sdk import AparaviClient
 
-# Load environment variables from .env file
 load_dotenv()
 
 client = AparaviClient(
     base_url=os.getenv("APARAVI_BASE_URL"),
-    api_key=os.getenv("APARAVI_API_KEY"),
-    timeout=1000,
-    logs="concise"
+    api_key=os.getenv("APARAVI_API_KEY")
 )
 
-# Load the pipeline configuration
 with open("./pipeline_config.json") as f:
     pipeline_config = json.load(f)
 
-# Execute the full pipeline workflow
 result = client.execute_pipeline_workflow(pipeline_config, file_glob="./*.png")
 
-# Display the result
+print(result)
+```
+
+### Pre Build Pipelines
+
+Available pre-built pipeline configurations:
+- **AUDIO_AND_SUMMARY**: Processes audio content and produces both a transcription and a concise summary. 
+- **SIMPLE_AUDIO_TRANSCRIBE**: Processes audio files and returns transcriptions of spoken content. 
+- **SIMPLE_PARSER**: Extracts and processes metadata and content from uploaded documents. 
+
+```python
+import os
+from dotenv import load_dotenv
+from aparavi_dtc_sdk import AparaviClient, PredefinedPipeline
+
+load_dotenv()
+
+client = AparaviClient(
+    base_url=os.getenv("APARAVI_BASE_URL"),
+    api_key=os.getenv("APARAVI_API_KEY")
+)
+
+result = client.run_predefined_pipeline(
+    PredefinedPipeline.SIMPLE_AUDIO_TRANSCRIBE,
+    file_glob="./data/audio/*.mp3"
+)
+
 print(result)
 ```
 
@@ -89,41 +110,29 @@ from dotenv import load_dotenv
 import os
 from aparavi_dtc_sdk import AparaviClient
 
-# Load environment variables from .env file
 load_dotenv()
 
-# Get the API key and base URL from environment variables
-api_key = os.getenv("APARAVI_API_KEY")
-base_url = os.getenv("APARAVI_BASE_URL")
-
-# Initialize the client
 client = AparaviClient(
-    base_url=base_url,
-    api_key=api_key,
-    logs="concise"
+    base_url=os.getenv("APARAVI_BASE_URL"),
+    api_key=os.getenv("APARAVI_API_KEY")
 )
 
-# Load pipeline config from a JSON file
 with open("pipeline_config.json", "r") as f:
     pipeline_config = json.load(f)
 
-# Validate the pipeline
 try:
     validation_result = client.validate_pipeline(pipeline_config)
 except Exception as e:
     print(f"Validation failed: {e}")
 
-# Start a task
 try:
     start_result = client.execute_pipeline(pipeline_config, name="my-task")
     if start_result.status == "OK":
         token = start_result.data["token"]
         task_type = start_result.data["type"]
 
-        # Get task status
         status_result = client.get_pipeline_status(token=token, task_type=task_type)
 
-        # End the task
         end_result = client.teardown_pipeline(token=token, task_type=task_type)
 
 except Exception as e:
