@@ -55,7 +55,6 @@ APARAVI_BASE_URL=https://eaas-dev.aparavi.com
 ## Quick Start
 
 ```python
-import json
 import os
 
 from dotenv import load_dotenv
@@ -68,10 +67,10 @@ client = AparaviClient(
     api_key=os.getenv("APARAVI_API_KEY")
 )
 
-with open("./pipeline_config.json") as f:
-    pipeline_config = json.load(f)
-
-result = client.execute_pipeline_workflow(pipeline_config, file_glob="./*.png")
+result = client.execute_pipeline_workflow(
+    pipeline="./pipeline_config.json",
+    file_glob="./*.png"
+)
 
 print(result)
 ```
@@ -96,8 +95,8 @@ client = AparaviClient(
     api_key=os.getenv("APARAVI_API_KEY")
 )
 
-result = client.run_predefined_pipeline(
-    PredefinedPipeline.SIMPLE_AUDIO_TRANSCRIBE, # Specify PredefinedPipeline
+result = client.execute_pipeline_workflow(
+    pipeline=PredefinedPipeline.SIMPLE_AUDIO_TRANSCRIBE, # Specify PredefinedPipeline
     file_glob="./audio/*.mp3"
 )
 
@@ -120,11 +119,8 @@ client = AparaviClient(
     api_key=os.getenv("APARAVI_API_KEY")
 )
 
-with open("pipeline_config.json", "r") as f:
-    pipeline_config = json.load(f)
-
 try:
-    validation_result = client.validate_pipeline(pipeline_config)
+    validation_result = client.validate_pipeline("pipeline_config.json")
 except Exception as e:
     print(f"Validation failed: {e}")
 

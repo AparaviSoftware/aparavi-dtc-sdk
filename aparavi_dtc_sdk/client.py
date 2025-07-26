@@ -99,10 +99,12 @@ class AparaviClient:
                 error_msg = json.dumps(error_msg)
             self._log(f"Error: {error_msg}", self.COLOR_RED)
 
-    def _wrap_pipeline_payload(self, pipeline: Dict[str, Any]) -> Dict[str, Any]:
+    def _wrap_pipeline_payload(self, pipeline: Union[Dict[str, Any], None]) -> Dict[str, Any]:
         """
         Ensures the pipeline payload has the required structure.
         """
+        if pipeline is None:
+            raise AparaviError("Pipeline is missing.")
         if "pipeline" in pipeline:
             pipeline.setdefault("errors", [])
             pipeline.setdefault("warnings", [])
@@ -158,6 +160,48 @@ class AparaviClient:
         except requests.exceptions.RequestException as e:
             raise AparaviError(f"Request failed: {str(e)}")
 
+    def _resolve_pipeline(
+        self,
+        pipeline_input: Union[str, PredefinedPipeline, Dict[str, Any]]
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Resolves the pipeline input into a dictionary. Accepts:
+        - A dict (returned as-is)
+        - A PredefinedPipeline enum (loads from internal pipelines dir)
+        - A string path to a JSON file (relative or absolute)
+        """
+        if isinstance(pipeline_input, dict):
+            return pipeline_input
+
+        # Resolve predefined enum
+        if isinstance(pipeline_input, PredefinedPipeline):
+            filename = f"{pipeline_input.value}.json"
+            pipeline_path = os.path.join(os.path.dirname(__file__), "pipelines", filename)
+
+        # Resolve string path
+        elif isinstance(pipeline_input, str):
+            abs_path = os.path.abspath(pipeline_input)
+            if os.path.exists(abs_path):
+                pipeline_path = abs_path
+            else:
+                # Fall back to internal pipelines dir if not found on filesystem
+                pipeline_path = os.path.join(os.path.dirname(__file__), "pipelines", pipeline_input)
+
+        else:
+            self._log("Invalid pipeline input type", self.COLOR_RED)
+            return None
+
+        if not os.path.exists(pipeline_path):
+            self._log(f"Pipeline definition not found: {pipeline_path}", self.COLOR_RED)
+            return None
+
+        try:
+            with open(pipeline_path, "r") as f:
+                return json.load(f)
+        except Exception as e:
+            self._log(f"Failed to read pipeline file: {e}", self.COLOR_RED)
+            return None
+
     def get_version(self) -> ResultBase:
         """
         Fetch the current version of the API or backend service.
@@ -165,7 +209,7 @@ class AparaviClient:
         response = self._make_request("GET", "/version")
         return self._parse_result(response)
 
-    def validate_pipeline(self, pipeline: Dict[str, Any]) -> ResultBase:
+    def validate_pipeline(self, pipeline: Union[Dict[str, Any], None]) -> ResultBase:
         """
         Validates a pipeline against the Aparavi backend.
         """
@@ -178,10 +222,14 @@ class AparaviClient:
 
         return result
 
-    def execute_pipeline(self, pipeline: Dict[str, Any], name=None, threads=None) -> ResultBase:
+    def execute_pipeline(self, pipeline: Union[str, PredefinedPipeline, Dict[str, Any]], name=None, threads=None) -> ResultBase:
         """
         Starts a pipeline execution task.
         """
+        resolved_pipeline = self._resolve_pipeline(pipeline)
+        if not pipeline:
+            raise AparaviError("Invalid pipeline input")
+
         params = {}
         if name:
             params["name"] = name
@@ -190,7 +238,7 @@ class AparaviClient:
                 raise ValueError("Threads must be between 1 and 16")
             params["threads"] = threads
 
-        payload = self._wrap_pipeline_payload(pipeline)
+        payload = self._wrap_pipeline_payload(resolved_pipeline)
         response = self._make_request("PUT", "/task", json=payload, params=params)
         result = self._parse_result(response)
 
@@ -213,12 +261,14 @@ class AparaviClient:
 
         return result
 
-    def send_payload_to_webhook(self, token: str, task_type: str, file_glob: str) -> List[Dict[str, Any]]:
+    def send_payload_to_webhook(self, token: str, task_type: Literal["gpu", "cpu"], file_glob: str) -> List[Dict[str, Any]]:
         """
         Uploads files to a running webhook pipeline task.
         """
         file_paths = glob.glob(file_glob)
         if not file_paths:
+            end_result = self.teardown_pipeline(token, task_type)
+            self._log(f"Task terminated: {end_result.status}", self.COLOR_RED)
             raise ValueError(f"No files matched pattern: {file_glob}")
 
         webhook_url = f"{self.base_url}/webhook"
@@ -254,7 +304,7 @@ class AparaviClient:
                 filename = os.path.basename(file_path)
                 content_type = mimetypes.guess_type(file_path)[0] or "application/octet-stream"
 
-                self._log(f"Uploading single file to webhook: {filename}", self.COLOR_ORANGE)
+                self._log(f"Uploading single file to webhook: {filename}", self.COLOR_GREEN)
 
                 headers.update({
                     "Content-Type": content_type,
@@ -279,6 +329,8 @@ class AparaviClient:
             return responses
 
         except requests.exceptions.RequestException as e:
+            end_result = self.teardown_pipeline(token, task_type)
+            self._log(f"Task terminated: {end_result.status}", self.COLOR_RED)
             if e.response:
                 raise AparaviError(f"Webhook failed: Server responded with status {e.response.status_code} - {e.response.text}")
             raise AparaviError(f"Error sending to webhook: {e}")
@@ -299,7 +351,7 @@ class AparaviClient:
 
     def execute_pipeline_workflow(
         self,
-        pipeline: Dict[str, Any],
+        pipeline: Union[str, PredefinedPipeline, Dict[str, Any]],
         file_glob: Optional[str] = None,
         task_name: Optional[str] = "my-task",
         poll_interval: int = 15,
@@ -307,16 +359,25 @@ class AparaviClient:
     ) -> Union[List[Dict[str, Any]], Dict[str, Any], None]:
         """
         Full lifecycle execution of a pipeline including webhook support.
+        Accepts a pipeline dict, a predefined pipeline enum, or a path to a pipeline JSON file.
         """
+        # Resolve the pipeline object from input
+        resolved_pipeline = self._resolve_pipeline(pipeline)
+        if resolved_pipeline is None:
+            self._log("Pipeline could not be resolved.", self.COLOR_RED)
+            return None
+
+        # Step 1: Validate the pipeline
         try:
-            result = self.validate_pipeline(pipeline)
+            result = self.validate_pipeline(resolved_pipeline)
             self._log(f"Pipeline validation: {result.status}", self.COLOR_GREEN)
         except Exception as e:
             self._log(f"Validation failed: {e}", self.COLOR_RED)
             return None
 
+        # Step 2: Execute pipeline
         try:
-            task_result = self.execute_pipeline(pipeline, name=task_name)
+            task_result = self.execute_pipeline(resolved_pipeline, name=task_name)
             if task_result.status != "OK":
                 raise Exception(f"Task failed to start: {task_result.error}")
 
@@ -326,8 +387,8 @@ class AparaviClient:
             else:
                 raise AparaviError("Response did not return valid JSON")
 
-            # Determine if it's a webhook pipeline
-            is_webhook = pipeline.get("source", "").startswith("webhook") if isinstance(pipeline.get("source"), str) else False
+            # Check if webhook-based pipeline
+            is_webhook = resolved_pipeline.get("source", "").startswith("webhook") if isinstance(resolved_pipeline.get("source"), str) else False
 
             if is_webhook:
                 self._log("Webhook pipeline detected. Polling until task is running...", self.COLOR_GREEN)
@@ -372,35 +433,4 @@ class AparaviClient:
         except Exception as e:
             self._log(f"Task operation failed: {e}", self.COLOR_RED)
             return None
-
-    def run_predefined_pipeline(
-        self,
-        name: PredefinedPipeline,
-        file_glob: Optional[str] = None,
-        task_name: Optional[str] = None,
-        poll_interval: int = 15,
-        max_attempts: int = 20
-    ) -> Union[List[Dict[str, Any]], Dict[str, Any], None]:
-        """
-        Loads a predefined pipeline from disk and executes it.
-        """
-        pipeline_path = os.path.join(os.path.dirname(__file__), "pipelines", f"{name.value}.json")
-        if not os.path.exists(pipeline_path):
-            self._log(f"Pipeline definition not found: {pipeline_path}", self.COLOR_RED)
-            return None
-
-        try:
-            with open(pipeline_path, "r") as f:
-                pipeline = json.load(f)
-        except Exception as e:
-            self._log(f"Failed to read pipeline file: {e}", self.COLOR_RED)
-            return None
-
-        return self.execute_pipeline_workflow(
-            pipeline=pipeline,
-            file_glob=file_glob,
-            task_name=task_name or name.value,
-            poll_interval=poll_interval,
-            max_attempts=max_attempts,
-        )
 
