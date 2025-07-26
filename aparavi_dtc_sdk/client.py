@@ -1,28 +1,34 @@
-# Standrd
+# Standard Library
 import json
 import glob
 import mimetypes
 import os
 import time
 import requests
-# Third Party
+
+# Third-party
 from typing import Optional, Dict, Any, Literal, List, Union
 from colorama import Fore, Style, init as colorama_init
 from enum import Enum
-# Local
+
+# Local project imports
 from .models import ResultBase
 from .exceptions import AparaviError, AuthenticationError, ValidationError, TaskNotFoundError, PipelineError
 
-# Initialize colorama for cross-platform compatibility
+# Initialize colorama to enable colored terminal output across platforms
 colorama_init(autoreset=True)
 
+
+# Enum for predefined pipelines stored as local JSON files
 class PredefinedPipeline(str, Enum):
     AUDIO_AND_SUMMARY = "audio_and_summary"
     SIMPLE_AUDIO_TRANSCRIBE = "simple_audio_transcribe"
     SIMPLE_PARSER = "simple_parser"
 
 
+# Main class that wraps Aparavi DTC API calls
 class AparaviClient:
+    # Terminal color constants
     COLOR_GREEN = Fore.GREEN
     COLOR_RED = Fore.RED
     COLOR_ORANGE = Fore.YELLOW
@@ -34,8 +40,11 @@ class AparaviClient:
         base_url: Union[str, None],
         api_key: Union[str, None],
         timeout: int = 30,
-        logs: Literal["none", "concise", "verbose"] = "none",
+        logs: Literal["none", "concise", "verbose"] = "concise",
     ):
+        """
+        Initializes the client with API credentials and optional logging configuration.
+        """
         if base_url is None:
             raise ValueError("base_url is a required value.")
         if api_key is None:
@@ -44,6 +53,8 @@ class AparaviClient:
         self.api_key = api_key
         self.timeout = timeout
         self.logs = logs
+
+        # Create a persistent session for requests
         self.session = requests.Session()
         self.session.headers.update({
             "Authorization": f"Bearer {api_key}",
@@ -51,17 +62,17 @@ class AparaviClient:
         })
 
     def _log(self, message: str, color: Optional[str] = None):
+        """
+        Prints a log message with optional color depending on verbosity.
+        """
         if self.logs == "none":
             return
         print(f"{color if color else ''}{self.PREFIX}{self.COLOR_RESET} {message}")
 
-    def _log_request(
-        self,
-        method: str,
-        url: str,
-        params: Optional[Dict[str, Any]] = None,
-        json_data: Optional[Dict[str, Any]] = None,
-    ):
+    def _log_request(self, method: str, url: str, params=None, json_data=None):
+        """
+        Logs outgoing HTTP requests.
+        """
         if self.logs == "verbose":
             self._log(f"{method} {url}", self.COLOR_GREEN)
             if params:
@@ -73,6 +84,9 @@ class AparaviClient:
             self._log(f"{method} {endpoint}", self.COLOR_GREEN)
 
     def _log_response(self, status_code: int, response_json: Optional[Dict[str, Any]]):
+        """
+        Logs the HTTP response status and JSON.
+        """
         is_success = status_code < 400
         color = self.COLOR_GREEN if is_success else self.COLOR_RED
         self._log(f"Status: {status_code}", color)
@@ -86,15 +100,13 @@ class AparaviClient:
             self._log(f"Error: {error_msg}", self.COLOR_RED)
 
     def _wrap_pipeline_payload(self, pipeline: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Ensures the pipeline payload has the required structure.
+        """
         if "pipeline" in pipeline:
-            # Respect existing values; fill in only if missing
-            if "errors" not in pipeline:
-                pipeline["errors"] = []
-            if "warnings" not in pipeline:
-                pipeline["warnings"] = []
+            pipeline.setdefault("errors", [])
+            pipeline.setdefault("warnings", [])
             return pipeline
-
-        # Payload format — wrap it
         return {
             "pipeline": pipeline,
             "errors": [],
@@ -102,6 +114,9 @@ class AparaviClient:
         }
 
     def _parse_result(self, response: Dict[str, Any]) -> ResultBase:
+        """
+        Wraps the raw API response into a structured ResultBase object.
+        """
         return ResultBase(
             status=response["status"],
             data=response.get("data"),
@@ -111,23 +126,9 @@ class AparaviClient:
 
     def _make_request(self, method: str, endpoint: str, **kwargs) -> Dict[str, Any]:
         """
-        Make an HTTP request to the API
-
-        Args:
-            method: HTTP method (GET, POST, PUT, DELETE)
-            endpoint: API endpoint
-            **kwargs: Additional arguments for requests
-
-        Returns:
-            Dict containing the API response
-
-        Raises:
-            AuthenticationError: If authentication fails
-            ValidationError: If validation fails
-            AparaviError: For other API errors
+        Sends an HTTP request and handles errors and logging.
         """
         url = f"{self.base_url}{endpoint}"
-
         params = kwargs.get("params")
         json_data = kwargs.get("json")
 
@@ -152,23 +153,24 @@ class AparaviClient:
             elif response.status_code >= 400:
                 raise AparaviError(f"API error {response.status_code}: {response.text}")
 
-            if response_json is None:
-                raise AparaviError("Response did not return valid JSON")
-
             return response_json
 
         except requests.exceptions.RequestException as e:
             raise AparaviError(f"Request failed: {str(e)}")
 
     def get_version(self) -> ResultBase:
-        response = self._make_request(method="GET", endpoint="/version")
-        result = self._parse_result(response)
-        return result
+        """
+        Fetch the current version of the API or backend service.
+        """
+        response = self._make_request("GET", "/version")
+        return self._parse_result(response)
 
     def validate_pipeline(self, pipeline: Dict[str, Any]) -> ResultBase:
+        """
+        Validates a pipeline against the Aparavi backend.
+        """
         payload = self._wrap_pipeline_payload(pipeline)
-        response = self._make_request(method="POST", endpoint="/pipe/validate", json=payload)
-
+        response = self._make_request("POST", "/pipe/validate", json=payload)
         result = self._parse_result(response)
 
         if result.status == "Error":
@@ -176,12 +178,10 @@ class AparaviClient:
 
         return result
 
-    def execute_pipeline(
-        self,
-        pipeline: Dict[str, Any],
-        name: Optional[str] = None,
-        threads: Optional[int] = None,
-    ) -> ResultBase:
+    def execute_pipeline(self, pipeline: Dict[str, Any], name=None, threads=None) -> ResultBase:
+        """
+        Starts a pipeline execution task.
+        """
         params = {}
         if name:
             params["name"] = name
@@ -191,8 +191,7 @@ class AparaviClient:
             params["threads"] = threads
 
         payload = self._wrap_pipeline_payload(pipeline)
-        response = self._make_request(method="PUT", endpoint="/task", json=payload, params=params)
-
+        response = self._make_request("PUT", "/task", json=payload, params=params)
         result = self._parse_result(response)
 
         if result.status == "Error":
@@ -201,8 +200,10 @@ class AparaviClient:
         return result
 
     def get_pipeline_status(self, token: str, task_type: str) -> ResultBase:
-        response = self._make_request(method="GET", endpoint="/task", params={"token": token, "type": task_type})
-
+        """
+        Fetches the current status of an executing pipeline.
+        """
+        response = self._make_request("GET", "/task", params={"token": token, "type": task_type})
         result = self._parse_result(response)
 
         if result.status == "Error":
@@ -213,16 +214,19 @@ class AparaviClient:
         return result
 
     def send_payload_to_webhook(self, token: str, task_type: str, file_glob: str) -> List[Dict[str, Any]]:
+        """
+        Uploads files to a running webhook pipeline task.
+        """
         file_paths = glob.glob(file_glob)
         if not file_paths:
             raise ValueError(f"No files matched pattern: {file_glob}")
 
         webhook_url = f"{self.base_url}/webhook"
         headers = {"Authorization": f"Bearer {self.api_key}"}
-
         responses = []
 
         try:
+            # Multipart upload for multiple files
             if len(file_paths) > 1:
                 files_to_upload = []
                 for file_path in file_paths:
@@ -230,12 +234,9 @@ class AparaviClient:
                         file_buffer = f.read()
                     filename = os.path.basename(file_path)
                     content_type = mimetypes.guess_type(file_path)[0] or "application/octet-stream"
-                    files_to_upload.append(
-                        ("files", (filename, file_buffer, content_type))
-                    )
+                    files_to_upload.append(("files", (filename, file_buffer, content_type)))
 
-                if self.logs != "none":
-                    self._log(f"Uploading {len(files_to_upload)} files to webhook (multipart)", self.COLOR_ORANGE)
+                self._log(f"Uploading {len(files_to_upload)} files to webhook (multipart)", self.COLOR_GREEN)
 
                 response = requests.put(
                     webhook_url,
@@ -245,6 +246,7 @@ class AparaviClient:
                     timeout=self.timeout,
                 )
 
+            # Single file upload
             else:
                 file_path = file_paths[0]
                 with open(file_path, "rb") as f:
@@ -252,8 +254,7 @@ class AparaviClient:
                 filename = os.path.basename(file_path)
                 content_type = mimetypes.guess_type(file_path)[0] or "application/octet-stream"
 
-                if self.logs != "none":
-                    self._log(f"Uploading single file to webhook: {filename}", self.COLOR_ORANGE)
+                self._log(f"Uploading single file to webhook: {filename}", self.COLOR_ORANGE)
 
                 headers.update({
                     "Content-Type": content_type,
@@ -269,7 +270,6 @@ class AparaviClient:
                 )
 
             response.raise_for_status()
-
             response_json = response.json()
             responses.append(response_json)
 
@@ -280,14 +280,14 @@ class AparaviClient:
 
         except requests.exceptions.RequestException as e:
             if e.response:
-                raise AparaviError(
-                    f"Webhook failed: Server responded with status {e.response.status_code} - {e.response.text}"
-                )
+                raise AparaviError(f"Webhook failed: Server responded with status {e.response.status_code} - {e.response.text}")
             raise AparaviError(f"Error sending to webhook: {e}")
 
     def teardown_pipeline(self, token: str, task_type: Literal["gpu", "cpu"]) -> ResultBase:
-        response = self._make_request(method="DELETE", endpoint="/task", params={"token": token, "type": task_type})
-
+        """
+        Gracefully ends an active task using the token and type.
+        """
+        response = self._make_request("DELETE", "/task", params={"token": token, "type": task_type})
         result = self._parse_result(response)
 
         if result.status == "Error":
@@ -306,19 +306,7 @@ class AparaviClient:
         max_attempts: int = 20
     ) -> Union[List[Dict[str, Any]], Dict[str, Any], None]:
         """
-        Run a pipeline through the AparaviClient instance.
-
-        Args:
-            pipeline: The pipeline definition dictionary.
-            file_glob: Glob pattern for files (required for webhook pipelines).
-            task_name: Optional task name for identification.
-            poll_interval: Seconds to wait between polling attempts.
-            max_attempts: Max polling attempts to wait for "Running" state.
-
-        Returns:
-            - List of responses from webhook if webhook pipeline.
-            - Final task status if non-webhook.
-            - None if pipeline execution fails.
+        Full lifecycle execution of a pipeline including webhook support.
         """
         try:
             result = self.validate_pipeline(pipeline)
@@ -336,52 +324,50 @@ class AparaviClient:
                 token = task_result.data["token"]
                 task_type = task_result.data["type"]
             else:
-                self._log("No response received.")
-                return
+                raise AparaviError("Response did not return valid JSON")
 
+            # Determine if it's a webhook pipeline
             is_webhook = pipeline.get("source", "").startswith("webhook") if isinstance(pipeline.get("source"), str) else False
 
             if is_webhook:
-                self._log("Webhook pipeline detected. Polling until task is running...", self.COLOR_ORANGE)
+                self._log("Webhook pipeline detected. Polling until task is running...", self.COLOR_GREEN)
+                if not file_glob:
+                    end_result = self.teardown_pipeline(token, task_type)
+                    self._log(f"Task terminated: {end_result.status}", self.COLOR_RED)
+                    raise ValueError("file_glob must be provided for webhook pipelines")
 
                 for attempt in range(max_attempts):
-                    status_result = self.get_pipeline_status(token, task_type=task_type)
-                    status_data = status_result.data
-                    self._log(f"[Attempt {attempt + 1}] getTaskResponse: {status_data}", self.COLOR_ORANGE)
-                    if status_data is not None:
-                        if status_data.get("status") == "Running":
-                            break
-
+                    status_result = self.get_pipeline_status(token, task_type)
+                    self._log(f"Task Status: [Attempt {attempt + 1}] {status_result.status}", self.COLOR_GREEN)
+                    if status_result.data and status_result.data.get("status") == "Running":
+                        break
                     time.sleep(poll_interval)
                 else:
+                    end_result = self.teardown_pipeline(token, task_type)
+                    self._log(f"Task terminated: {end_result.status}", self.COLOR_RED)
                     raise TimeoutError("Task never entered 'Running' state.")
 
                 self._log("Webhook task is running. Sending files...", self.COLOR_GREEN)
-                if not file_glob:
-                    raise ValueError("file_glob must be provided for webhook pipelines")
 
-                responses = self.send_payload_to_webhook(
-                    token=token,
-                    task_type=task_type,
-                    file_glob=file_glob
-                )
+                responses = self.send_payload_to_webhook(token, task_type, file_glob)
 
-                final_status = self.get_pipeline_status(token=token, task_type=task_type)
-                self._log(f"Final Task status: {final_status.data}", self.COLOR_GREEN)
+                final_status = self.get_pipeline_status(token, task_type)
+                self._log(f"Final Task status: {final_status.status}", self.COLOR_GREEN)
 
-                end_result = self.teardown_pipeline(token=token, task_type=task_type)
+                end_result = self.teardown_pipeline(token, task_type)
                 self._log(f"Task ended: {end_result.status}", self.COLOR_GREEN)
 
                 return responses
 
             else:
-                final_status = self.get_pipeline_status(token=token, task_type=task_type)
-                self._log(f"Final Task status: {final_status.data}", self.COLOR_GREEN)
+                # Standard CPU/GPU pipeline
+                final_status = self.get_pipeline_status(token, task_type)
+                self._log(f"Final Task status: {final_status.status}", self.COLOR_GREEN)
 
-                end_result = self.teardown_pipeline(token=token, task_type=task_type)
+                end_result = self.teardown_pipeline(token, task_type)
                 self._log(f"Task ended: {end_result.status}", self.COLOR_GREEN)
 
-                return final_status.data  # 🔁 non-webhook return
+                return final_status.data
 
         except Exception as e:
             self._log(f"Task operation failed: {e}", self.COLOR_RED)
@@ -396,17 +382,7 @@ class AparaviClient:
         max_attempts: int = 20
     ) -> Union[List[Dict[str, Any]], Dict[str, Any], None]:
         """
-        Run a predefined pipeline stored in the 'packages' folder.
-
-        Args:
-            name: Enum value of the predefined pipeline.
-            file_glob: Optional glob pattern (required for webhook pipelines).
-            task_name: Optional name for the task.
-            poll_interval: Seconds between polling attempts.
-            max_attempts: Max polling attempts for status.
-
-        Returns:
-            Result of the pipeline execution workflow.
+        Loads a predefined pipeline from disk and executes it.
         """
         pipeline_path = os.path.join(os.path.dirname(__file__), "pipelines", f"{name.value}.json")
         if not os.path.exists(pipeline_path):

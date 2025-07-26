@@ -12,9 +12,9 @@ This SDK simplifies integration with Aparavi's data processing pipelines by prov
 * **Task Management**: Start (`execute_pipeline`), monitor (`get_pipeline_status`), and terminate (`teardown_pipeline`) processing tasks.
 * **Webhook Integration**: Send real-time updates to your task engines with `send_payload_to_webhook`.
 * **Workflow Orchestration**: Automatically run an end-to-end pipeline—including validation, execution, polling, data transfer, and teardown—using `execute_pipeline_workflow`.
-* **Error Handling**: Comprehensive exception handling with meaningful error messages.
-* **Type Safety**: Full type hints and structured data models for reliable development.
 * **Versioning**: Track SDK versions to ensure compatibility and easy updates using `get_version`.
+* **Type Safety**: Full type hints and structured data models for reliable development.
+* **Error Handling**: Comprehensive exception handling with meaningful error messages.
 
 Perfect for data engineers, analysts, and developers building automated data processing workflows.
 
@@ -57,6 +57,7 @@ APARAVI_BASE_URL=https://eaas-dev.aparavi.com
 ```python
 import json
 import os
+
 from dotenv import load_dotenv
 from aparavi_dtc_sdk import AparaviClient
 
@@ -84,8 +85,9 @@ Available pre-built pipeline configurations:
 
 ```python
 import os
+
 from dotenv import load_dotenv
-from aparavi_dtc_sdk import AparaviClient, PredefinedPipeline
+from aparavi_dtc_sdk import AparaviClient, PredefinedPipeline # Import PredefinedPipeline enum
 
 load_dotenv()
 
@@ -95,8 +97,8 @@ client = AparaviClient(
 )
 
 result = client.run_predefined_pipeline(
-    PredefinedPipeline.SIMPLE_AUDIO_TRANSCRIBE,
-    file_glob="./data/audio/*.mp3"
+    PredefinedPipeline.SIMPLE_AUDIO_TRANSCRIBE, # Specify PredefinedPipeline
+    file_glob="./audio/*.mp3"
 )
 
 print(result)
@@ -106,8 +108,9 @@ print(result)
 
 ```python
 import json
-from dotenv import load_dotenv
 import os
+
+from dotenv import load_dotenv
 from aparavi_dtc_sdk import AparaviClient
 
 load_dotenv()
