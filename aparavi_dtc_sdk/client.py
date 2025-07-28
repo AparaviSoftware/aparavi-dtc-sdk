@@ -20,7 +20,7 @@ colorama_init(autoreset=True)
 
 
 # Enum for predefined pipelines stored as local JSON files
-class PredefinedPipeline(str, Enum):
+class PredefinedPipelines(str, Enum):
     ADVANCED_PARSER="advanced_parser"
     AUDIO_AND_SUMMARY = "audio_and_summary"
     SIMPLE_AUDIO_TRANSCRIBE = "simple_audio_transcribe"
@@ -163,7 +163,7 @@ class AparaviClient:
 
     def _resolve_pipeline(
         self,
-        pipeline_input: Union[str, PredefinedPipeline, Dict[str, Any]]
+        pipeline_input: Union[str, PredefinedPipelines, Dict[str, Any]]
     ) -> Optional[Dict[str, Any]]:
         """
         Resolves the pipeline input into a dictionary. Accepts:
@@ -175,7 +175,7 @@ class AparaviClient:
             return pipeline_input
 
         # Resolve predefined enum
-        if isinstance(pipeline_input, PredefinedPipeline):
+        if isinstance(pipeline_input, PredefinedPipelines):
             filename = f"{pipeline_input.value}.json"
             pipeline_path = os.path.join(os.path.dirname(__file__), "pipelines", filename)
 
@@ -223,7 +223,7 @@ class AparaviClient:
 
         return result
 
-    def execute_pipeline(self, pipeline: Union[str, PredefinedPipeline, Dict[str, Any]], name=None, threads=None) -> ResultBase:
+    def execute_pipeline(self, pipeline: Union[str, PredefinedPipelines, Dict[str, Any]], name=None, threads=None) -> ResultBase:
         """
         Starts a pipeline execution task.
         """
@@ -352,7 +352,7 @@ class AparaviClient:
 
     def execute_pipeline_workflow(
         self,
-        pipeline: Union[str, PredefinedPipeline, Dict[str, Any]],
+        pipeline: Union[str, PredefinedPipelines, Dict[str, Any]],
         file_glob: Optional[str] = None,
         task_name: Optional[str] = "my-task",
         poll_interval: int = 15,

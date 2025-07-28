@@ -87,7 +87,7 @@ Available pre-built pipeline configurations:
 import os
 
 from dotenv import load_dotenv
-from aparavi_dtc_sdk import AparaviClient, PredefinedPipeline # Import PredefinedPipeline enum
+from aparavi_dtc_sdk import AparaviClient, PredefinedPipelines # Import PredefinedPipelines enum
 
 load_dotenv()
 
@@ -97,7 +97,7 @@ client = AparaviClient(
 )
 
 result = client.execute_pipeline_workflow(
-    pipeline=PredefinedPipeline.SIMPLE_AUDIO_TRANSCRIBE, # Specify PredefinedPipeline
+    pipeline=PredefinedPipelines.SIMPLE_AUDIO_TRANSCRIBE, # Specify PredefinedPipelines
     file_glob="./audio/*.mp3"
 )
 
