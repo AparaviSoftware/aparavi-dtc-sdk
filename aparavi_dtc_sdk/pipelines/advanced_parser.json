@@ -1,0 +1,127 @@
+{
+	"components": [
+		{
+			"id": "llamaparse_1",
+			"provider": "llamaparse",
+			"config": {
+				"default": {
+					"lvm_model": "anthropic-sonnet-4.0",
+					"parse_mode": "parse_page_with_lvm",
+					"result_type": "markdown",
+					"spreadsheet_extract_sub_tables": true,
+					"verbose": false
+				},
+				"profile": "default"
+			},
+			"ui": {
+				"position": {
+					"x": 420,
+					"y": 360
+				},
+				"measured": {
+					"width": 180,
+					"height": 89
+				},
+				"data": {
+					"class": "data",
+					"type": "default"
+				},
+				"formDataValid": false,
+				"edges": [
+					{
+						"selectable": true,
+						"deletable": true,
+						"id": "xy-edge__webhook_1source-tags-0-llamaparse_1target-tags-0",
+						"source": "webhook_1",
+						"target": "llamaparse_1",
+						"sourceHandle": "source-tags-0",
+						"targetHandle": "target-tags-0"
+					}
+				]
+			},
+			"input": [
+				{
+					"lane": "tags",
+					"from": "webhook_1"
+				}
+			]
+		},
+		{
+			"id": "webhook_1",
+			"provider": "webhook",
+			"config": {
+				"hideForm": true,
+				"mode": "Source",
+				"type": "webhook"
+			},
+			"ui": {
+				"position": {
+					"x": 220,
+					"y": 340
+				},
+				"measured": {
+					"width": 180,
+					"height": 148
+				},
+				"data": {
+					"class": "source",
+					"type": "default"
+				},
+				"formDataValid": true
+			}
+		},
+		{
+			"id": "response_1",
+			"provider": "response",
+			"config": {
+				"lanes": []
+			},
+			"ui": {
+				"position": {
+					"x": 640,
+					"y": 260
+				},
+				"measured": {
+					"width": 180,
+					"height": 326
+				},
+				"data": {
+					"class": "infrastructure",
+					"type": "default"
+				},
+				"formDataValid": true,
+				"edges": [
+					{
+						"selectable": true,
+						"deletable": true,
+						"id": "xy-edge__llamaparse_1source-table-0-response_1target-table-5",
+						"source": "llamaparse_1",
+						"target": "response_1",
+						"sourceHandle": "source-table-0",
+						"targetHandle": "target-table-5"
+					},
+					{
+						"selectable": true,
+						"deletable": true,
+						"id": "xy-edge__llamaparse_1source-text-0-response_1target-text-6",
+						"source": "llamaparse_1",
+						"target": "response_1",
+						"sourceHandle": "source-text-0",
+						"targetHandle": "target-text-6"
+					}
+				]
+			},
+			"input": [
+				{
+					"lane": "table",
+					"from": "llamaparse_1"
+				},
+				{
+					"lane": "text",
+					"from": "llamaparse_1"
+				}
+			]
+		}
+	],
+	"source": "webhook_1"
+}

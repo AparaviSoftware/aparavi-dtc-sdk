@@ -21,6 +21,7 @@ colorama_init(autoreset=True)
 
 # Enum for predefined pipelines stored as local JSON files
 class PredefinedPipeline(str, Enum):
+    ADVANCED_PARSER="advanced_parser"
     AUDIO_AND_SUMMARY = "audio_and_summary"
     SIMPLE_AUDIO_TRANSCRIBE = "simple_audio_transcribe"
     SIMPLE_PARSER = "simple_parser"
