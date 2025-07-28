@@ -78,6 +78,7 @@ print(result)
 ### Pre Build Pipelines
 
 Available pre-built pipeline configurations:
+- `ADVANCED_PARSER`: Parse documentes using LLM-based logic, and deliver structured outputs such as text and tables. 
 - `AUDIO_AND_SUMMARY`: Processes audio content and produces both a transcription and a concise summary. 
 - `SIMPLE_AUDIO_TRANSCRIBE`: Processes audio files and returns transcriptions of spoken content. 
 - `SIMPLE_PARSER`: Extracts and processes metadata and content from uploaded documents. 
