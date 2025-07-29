@@ -265,7 +265,7 @@ class AparaviClient:
 
         return result
 
-    def send_payload_to_webhook(self, token: str, task_type: Literal["gpu", "cpu"], file_glob: str) -> List[Dict[str, Any]]:
+    def send_payload_to_webhook(self, token: str, task_type: Literal["gpu", "cpu"], file_glob: str, force_octet_stream: bool = False) -> List[Dict[str, Any]]:
         """
         Uploads files to a running webhook pipeline task.
         """
@@ -285,7 +285,10 @@ class AparaviClient:
                     with open(file_path, "rb") as f:
                         file_buffer = f.read()
                     filename = os.path.basename(file_path)
-                    content_type = mimetypes.guess_type(file_path)[0] or "application/octet-stream"
+                    # content_type = mimetypes.guess_type(file_path)[0] or "application/octet-stream"
+                    content_type = (
+                        "application/octet-stream" if force_octet_stream else mimetypes.guess_type(file_path)[0] or "application/octet-stream"
+                    )
                     files_to_upload.append(("files", (filename, file_buffer, content_type)))
 
                 self._log(f"Uploading {len(files_to_upload)} files to webhook (multipart)", self.COLOR_GREEN)
@@ -304,7 +307,10 @@ class AparaviClient:
                 with open(file_path, "rb") as f:
                     file_buffer = f.read()
                 filename = os.path.basename(file_path)
-                content_type = mimetypes.guess_type(file_path)[0] or "application/octet-stream"
+                # content_type = mimetypes.guess_type(file_path)[0] or "application/octet-stream"
+                content_type = (
+                    "application/octet-stream" if force_octet_stream else mimetypes.guess_type(file_path)[0] or "application/octet-stream"
+                )
 
                 self._log(f"Uploading single file to webhook: {filename}", self.COLOR_GREEN)
 
@@ -414,7 +420,10 @@ class AparaviClient:
 
                 self._log("Webhook task is running. Sending files...", self.COLOR_GREEN)
 
-                responses = self.send_payload_to_webhook(token, task_type, file_glob)
+                has_llamaparse = any(
+                    comp.get("provider") == "llamaparse" for comp in resolved_pipeline.get("components", [])
+                )
+                responses = self.send_payload_to_webhook(token, task_type, file_glob, has_llamaparse)
 
                 final_status = self.get_pipeline_status(token, task_type)
                 self._log(f"Final Task status: {final_status.status}", self.COLOR_GREEN)

@@ -8,13 +8,12 @@ A Python SDK for interacting with the Aparavi Web Services API. This SDK provide
 
 This SDK simplifies integration with Aparavi's data processing pipelines by providing:
 
-* **Pipeline Validation**: Validate your data processing configurations before execution with `validate_pipeline`.
-* **Task Management**: Start (`execute_pipeline`), monitor (`get_pipeline_status`), and terminate (`teardown_pipeline`) processing tasks.
-* **Webhook Integration**: Send real-time updates to your task engines with `send_payload_to_webhook`.
-* **Workflow Orchestration**: Automatically run an end-to-end pipeline—including validation, execution, polling, data transfer, and teardown—using `execute_pipeline_workflow`.
-* **Versioning**: Track SDK versions to ensure compatibility and easy updates using `get_version`.
-* **Type Safety**: Full type hints and structured data models for reliable development.
-* **Error Handling**: Comprehensive exception handling with meaningful error messages.
+* `validate_pipeline`: Validates a pipeline structure against Aparavi's backend to ensure it is correctly formed.
+* `execute_pipeline`: Submits a pipeline for execution on the Aparavi platform.
+* `get_pipeline_status`: Fetches the current execution status of a pipeline task.
+* `teardown_pipeline`: Gracefully ends a running pipeline task.
+* `send_payload_to_webhook`: Sends file(s) to a running webhook-based pipeline.
+* `get_version`: Fetches the current version of the Aparavi API/backend.
 
 Perfect for data engineers, analysts, and developers building automated data processing workflows.
 
