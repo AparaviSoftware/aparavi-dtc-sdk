@@ -1,10 +1,10 @@
 # Standard Library
-import json
 import glob
+import json
 import mimetypes
 import os
-import time
 import requests
+import time
 
 # Third-party
 from typing import Optional, Dict, Any, Literal, List, Union
@@ -17,6 +17,9 @@ from .exceptions import AparaviError, AuthenticationError, ValidationError, Task
 
 # Initialize colorama to enable colored terminal output across platforms
 colorama_init(autoreset=True)
+
+# Blow away system mimetypes and use pythons
+mimetypes.init()
 
 
 # Enum for predefined pipelines stored as local JSON files
@@ -40,7 +43,7 @@ class AparaviClient:
         self,
         base_url: Union[str, None],
         api_key: Union[str, None],
-        timeout: int = 30,
+        timeout: int = 100,
         logs: Literal["none", "concise", "verbose"] = "concise",
     ):
         """
@@ -175,7 +178,7 @@ class AparaviClient:
             return pipeline_input
 
         # Resolve predefined enum
-        if isinstance(pipeline_input, PredefinedPipelines):
+        elif isinstance(pipeline_input, PredefinedPipelines):
             filename = f"{pipeline_input.value}.json"
             pipeline_path = os.path.join(os.path.dirname(__file__), "pipelines", filename)
 
@@ -268,8 +271,6 @@ class AparaviClient:
         """
         file_paths = glob.glob(file_glob)
         if not file_paths:
-            end_result = self.teardown_pipeline(token, task_type)
-            self._log(f"Task terminated: {end_result.status}", self.COLOR_RED)
             raise ValueError(f"No files matched pattern: {file_glob}")
 
         webhook_url = f"{self.base_url}/webhook"
@@ -330,8 +331,6 @@ class AparaviClient:
             return responses
 
         except requests.exceptions.RequestException as e:
-            end_result = self.teardown_pipeline(token, task_type)
-            self._log(f"Task terminated: {end_result.status}", self.COLOR_RED)
             if e.response:
                 raise AparaviError(f"Webhook failed: Server responded with status {e.response.status_code} - {e.response.text}")
             raise AparaviError(f"Error sending to webhook: {e}")
@@ -356,7 +355,7 @@ class AparaviClient:
         file_glob: Optional[str] = None,
         task_name: Optional[str] = "my-task",
         poll_interval: int = 15,
-        max_attempts: int = 20
+        max_attempts: int = 1000
     ) -> Union[List[Dict[str, Any]], Dict[str, Any], None]:
         """
         Full lifecycle execution of a pipeline including webhook support.
@@ -376,6 +375,8 @@ class AparaviClient:
             self._log(f"Validation failed: {e}", self.COLOR_RED)
             return None
 
+        token = None
+        task_type = None
         # Step 2: Execute pipeline
         try:
             task_result = self.execute_pipeline(resolved_pipeline, name=task_name)
@@ -385,6 +386,7 @@ class AparaviClient:
             if task_result.data is not None:
                 token = task_result.data["token"]
                 task_type = task_result.data["type"]
+                self._log(f"Task token: {token}", self.COLOR_GREEN)
             else:
                 raise AparaviError("Response did not return valid JSON")
 
@@ -394,19 +396,20 @@ class AparaviClient:
             if is_webhook:
                 self._log("Webhook pipeline detected. Polling until task is running...", self.COLOR_GREEN)
                 if not file_glob:
-                    end_result = self.teardown_pipeline(token, task_type)
-                    self._log(f"Task terminated: {end_result.status}", self.COLOR_RED)
                     raise ValueError("file_glob must be provided for webhook pipelines")
 
-                for attempt in range(max_attempts):
-                    status_result = self.get_pipeline_status(token, task_type)
-                    self._log(f"Task Status: [Attempt {attempt + 1}] {status_result.status}", self.COLOR_GREEN)
-                    if status_result.data and status_result.data.get("status") == "Running":
-                        break
-                    time.sleep(poll_interval)
-                else:
-                    end_result = self.teardown_pipeline(token, task_type)
-                    self._log(f"Task terminated: {end_result.status}", self.COLOR_RED)
+                try:
+                    for attempt in range(max_attempts):
+                        status_result = self.get_pipeline_status(token, task_type)
+                        self._log(f"Task Status: [Attempt {attempt + 1}] {status_result.status}", self.COLOR_GREEN)
+                        if status_result.data and status_result.data.get("status") == "Running":
+                            break
+                        time.sleep(poll_interval)
+
+                except KeyboardInterrupt:
+                    raise AparaviError("Interrupted by user.") 
+
+                except:
                     raise TimeoutError("Task never entered 'Running' state.")
 
                 self._log("Webhook task is running. Sending files...", self.COLOR_GREEN)
@@ -434,4 +437,12 @@ class AparaviClient:
         except Exception as e:
             self._log(f"Task operation failed: {e}", self.COLOR_RED)
             return None
+
+        finally:
+            if token and task_type:
+                try:
+                    end_result = self.teardown_pipeline(token, task_type)
+                    self._log(f"Task ended: {end_result.status}", self.COLOR_GREEN)
+                except Exception as e:
+                    self._log(f"Failed to teardown task: {e}", self.COLOR_RED)
 
