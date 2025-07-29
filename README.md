@@ -13,6 +13,7 @@ This SDK simplifies integration with Aparavi's data processing pipelines by prov
 * `get_pipeline_status`: Fetches the current execution status of a pipeline task.
 * `teardown_pipeline`: Gracefully ends a running pipeline task.
 * `send_payload_to_webhook`: Sends file(s) to a running webhook-based pipeline.
+* `execute_pipeline_workflow`: Performs a full end-to-end execution lifecycle for a pipeline.
 * `get_version`: Fetches the current version of the Aparavi API/backend.
 
 Perfect for data engineers, analysts, and developers building automated data processing workflows.
