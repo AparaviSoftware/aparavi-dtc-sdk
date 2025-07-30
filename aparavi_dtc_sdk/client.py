@@ -142,13 +142,16 @@ class AparaviClient:
 
         try:
             response = self.session.request(method=method, url=url, timeout=self.timeout, **kwargs)
-            try:
-                response_json = response.json()
-            except Exception:
-                response_json = None
 
-            if response_json is None:
-                raise AparaviError("Response did not return valid JSON")
+            if response.status_code == 200:
+                try:
+                    response_json = response.json()
+                except:
+                    raise AparaviError(response.text)
+            else:
+                if response.status_code == 401:
+                    raise AparaviError("Unauthorized api key, or you are out of tokens.")
+                raise AparaviError(response.text)
 
             self._log_response(response.status_code, response_json)
 
