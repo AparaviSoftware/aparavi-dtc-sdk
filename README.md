@@ -75,7 +75,7 @@ result = client.execute_pipeline_workflow(
 print(result)
 ```
 
-### Pre Build Pipelines
+### Pre Built Pipelines
 
 Available pre-built pipeline configurations:
 - `ADVANCED_PARSER`: Parse documentes using LLM-based logic, and deliver structured outputs such as text and tables. 
