@@ -23,7 +23,7 @@ setup(
     description="Python SDK for Aparavi Data Toolchain API",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://dev.aparavi.com",
+    url="https://dtc.aparavi.com",
     packages=find_packages(),
     package_data={"aparavi_dtc_sdk": ["pipelines/*.json"]},
     classifiers=[
