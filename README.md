@@ -23,8 +23,8 @@ Perfect for data engineers, analysts, and developers building automated data pro
 ## Setup
 
 1. **Get your credentials:**
-- Obtain your API key from the [Aparavi console](https://core-dev.aparavi.com/usage/)
-- Note your API base URL (e.g. `https://eaas-dev.aparavi.com`)
+- Obtain your API key from the [Aparavi console](https://core.aparavi.com/usage/)
+- Note your API base URL (e.g. `https://eaas.aparavi.com/`)
 
 2. **Install package:**
    ```bash
@@ -47,7 +47,7 @@ Perfect for data engineers, analysts, and developers building automated data pro
 
 ```env
 APARAVI_API_KEY=aparavi-dtc-api-key
-APARAVI_BASE_URL=https://eaas-dev.aparavi.com
+APARAVI_BASE_URL=https://eaas.aparavi.com/
 ```
 
 ---
@@ -78,7 +78,6 @@ print(result)
 ### Pre Built Pipelines
 
 Available pre-built pipeline configurations:
-- `ADVANCED_PARSER`: Parse documentes using LLM-based logic, and deliver structured outputs such as text and tables. 
 - `AUDIO_AND_SUMMARY`: Processes audio content and produces both a transcription and a concise summary. 
 - `SIMPLE_AUDIO_TRANSCRIBE`: Processes audio files and returns transcriptions of spoken content. 
 - `SIMPLE_PARSER`: Extracts and processes metadata and content from uploaded documents. 
