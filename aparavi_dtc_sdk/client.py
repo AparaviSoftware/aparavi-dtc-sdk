@@ -266,6 +266,14 @@ class AparaviClient:
                 raise TaskNotFoundError(f"Task not found: {result.error}")
             raise AparaviError(f"Failed to get task status: {result.error}")
 
+        if result and result.data and result.data.get("errors") and len(result.data["errors"]) > 0:
+            concatenated_message = "; ".join(result.data["errors"])
+            raise AparaviError(concatenated_message)
+
+        if result and result.data and result.data.get("warnings") and len(result.data["warnings"]) > 0:
+            concatenated_message = "; ".join(result.data["warnings"])
+            self._log(concatenated_message)
+
         return result
 
     def send_payload_to_webhook(self, token: str, task_type: Literal["gpu", "cpu"], file_glob: str, force_octet_stream: bool = False) -> List[Dict[str, Any]]:
