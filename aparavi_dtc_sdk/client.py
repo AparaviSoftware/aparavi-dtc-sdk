@@ -272,7 +272,7 @@ class AparaviClient:
 
         if result and result.data and result.data.get("warnings") and len(result.data["warnings"]) > 0:
             concatenated_message = "; ".join(result.data["warnings"])
-            self._log(concatenated_message)
+            self._log(concatenated_message, self.COLOR_ORANGE)
 
         return result
 
