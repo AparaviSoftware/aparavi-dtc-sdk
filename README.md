@@ -54,7 +54,7 @@ APARAVI_BASE_URL=https://eaas.aparavi.com/
 
 ## Quick Start
 
-The Aparavi SDK now supports a simplified, one-step method for executing pipelines. This method performs validation, execution, monitoring, and teardown in a single call:
+The Aparavi SDK supports a simplified, one-step method for executing pipelines. This method performs validation, execution, monitoring, and teardown in a single call:
 
 ```python
 import os
@@ -77,10 +77,7 @@ result = client.execute_pipeline_workflow(
 print(result)
 ```
 
-### Backward Compatibility
-We will maintain support for the legacy multi-step pipeline execution methods (validate_pipeline, execute_pipeline, get_pipeline_status, and teardown_pipeline) for the time being. However, we recommend migrating to the new execute_pipeline_workflow interface as it offers a more convenient and reliable developer experience.
-
-Deprecation notices and timelines will be announced in future releases.
+><span style="color:#e57373"> **_NOTE:_**</span>  While we continue to evolve the SDK to support more flexible and modular pipeline workflows, the single-function call approach (`execute_pipeline_workflow`) will remain fully supported for the foreseeable future. This ensures backward compatibility and allows existing integrations to continue working without any changes.
 
 ### Pre Built Pipelines
 
@@ -111,13 +108,6 @@ print(result)
 ```
 
 ### Power user quick start
-
-#### Deprecation Notice
-
-We will soon sunset the multi-step pipeline execution process in favor of a simplified, single-method call that improves usability and reduces boilerplate code.
-
-#### Deprecated Approach
-The following pattern—using separate calls to validate_pipeline, execute_pipeline, get_pipeline_status, and teardown_pipeline—will no longer be supported in future SDK versions:
 
 ```python
 import json
@@ -151,6 +141,8 @@ try:
 except Exception as e:
     print(f"Task operation failed: {e}")
 ```
+
+><span style="color:#e57373"> **_NOTE:_**</span>  We will soon sunset the multi-step pipeline execution process in favor of a simplified, single-method call that improves usability and reduces boilerplate code. The above pattern—using separate calls to `validate_pipeline`, `execute_pipeline`, `get_pipeline_status`, and `teardown_pipeline`—will no longer be supported in future SDK versions.
 
 ---
 
@@ -192,4 +184,3 @@ For problems and questions, please open an issue on the [GitHub repository](http
 [github.com/joshuadarron](https://github.com/joshuadarron)
 
 Contributions welcome — feel free to submit a PR or open an issue!
-
